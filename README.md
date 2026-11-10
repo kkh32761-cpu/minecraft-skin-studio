@@ -25,7 +25,7 @@ The editor needs no API key. `npm run build` bundles a Cloudflare Worker at `dis
 - PNG-derived Canvas cuboid renderer when WebGL is unavailable (drag, wheel/pinch, front/back/side/top views, idle/walk/run)
 - Steve/Alex model toggle, outer-layer toggle, Korean responsive workspace
 
-The initial project opens with a character example. The 64×64 PNG itself does not encode Classic/Slim model choice. Choose the same model in the Minecraft upload UI. Changing models in the editor reinterprets the current texture; it does not convert an existing skin's arm pixels.
+The initial project opens with a plain guide skin. The example character is available from the Example button. The full 64×64 atlas is the primary editor; clicking any mapped face selects its part and layer, and the selected face can be expanded for closer work. Up to 12 actually painted colors are remembered locally, most recent first. The 64×64 PNG itself does not encode Classic/Slim model choice. Choose the same model in the Minecraft upload UI. Changing models in the editor reinterprets the current texture; it does not convert an existing skin's arm pixels.
 
 ## AI generation status
 

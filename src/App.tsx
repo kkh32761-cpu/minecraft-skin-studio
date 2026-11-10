@@ -2,11 +2,13 @@ import {useEffect,useRef,useState} from 'react';
 import {SkinViewer,IdleAnimation,WalkingAnimation,RunningAnimation} from 'skinview3d';
 import {drawSoftwareViewer,bindSoftwareControls} from './softwareViewer';
 import ColorPicker from './ColorPicker';
-import {assertSkinDimensions,blankSkin,canvasFromData,clearRegion,fill,findRegion,hexRgba,paint,parts,regions,rgbaHex,sampleSkin,SIZE,type Face,type Layer,type Model,type Part,type Region} from './skin';
+import {assertSkinDimensions,blankSkin,canvasFromData,clearRegion,fill,findRegion,hexRgba,paint,parts,pixelIndex,regions,rgbaHex,sampleSkin,SIZE,type Face,type Layer,type Model,type Part,type Region} from './skin';
 const CACHE='minecraft-skin-studio-v1';
+const RECENT_COLORS='minecraft-skin-studio-recent-colors-v1';
+const GUIDE=blankSkin();
 type Tool='pen'|'eraser'|'picker'|'fill';
 type Animation='stop'|'idle'|'walk'|'run';
-const palette=['#302633','#5e3e58','#a65872','#e0a7a1','#f1d5b5','#f9e7d3','#fcf8e8','#234b63','#4b7894','#98bac2','#343d53','#787b93','#f0c579','#404a2e','#76523e','#151820'];
+function readRecentColors():string[]{try{const raw=JSON.parse(localStorage.getItem(RECENT_COLORS)||'[]');return Array.isArray(raw)?raw.filter((v:unknown)=>typeof v==='string'&&/^#[0-9a-f]{6}$/i.test(v)).slice(0,12):[]}catch{return []}}
 const labels: Record<string,string>={top:'윗면',bottom:'아랫면',left:'왼쪽 면',front:'앞면',right:'오른쪽 면',back:'뒷면'};
 function readSaved():{data:Uint8ClampedArray,model:Model}|null {
   try {const raw=JSON.parse(localStorage.getItem(CACHE)||'null'); if(!raw||!['slim','default'].includes(raw.model))return null;
@@ -14,7 +16,7 @@ function readSaved():{data:Uint8ClampedArray,model:Model}|null {
   }catch{return null;}
 }
 export default function App(){
-  const [data,setData]=useState<Uint8ClampedArray>(()=>sampleSkin('default'));
+  const [data,setData]=useState<Uint8ClampedArray>(()=>blankSkin());
   const [model,setModel]=useState<Model>('default');
   const [part,setPart]=useState<Part>('head');
   const [layer,setLayer]=useState<Layer>('base');
@@ -22,12 +24,13 @@ export default function App(){
   const [tool,setTool]=useState<Tool>('pen');
   const [color,setColor]=useState('#5e3e58');
   const [colorAlpha,setColorAlpha]=useState(255);
+  const [recentColors,setRecentColors]=useState<string[]>(readRecentColors);
   const [aiReady,setAIReady]=useState(false);
   const [aiBusy,setAIBusy]=useState(false);
   const [aiDescription,setAIDescription]=useState('');
   const [grid,setGrid]=useState(true);
   const [outer,setOuter]=useState(true);
-  const [zoom,setZoom]=useState(8);
+  const [zoom,setZoom]=useState(7);
   const [faceZoom,setFaceZoom]=useState(38);
   const [previewWidth,setPreviewWidth]=useState(()=>Math.max(360,Math.round((window.innerWidth-245)*.38)));
   const [animation,setAnimation]=useState<Animation>('idle');
@@ -55,12 +58,13 @@ export default function App(){
   function undo(){if(!history.current.length)return;future.current.push(new Uint8ClampedArray(current.current));const v=history.current.pop()!;current.current=v;setData(v);setRevision(n=>n+1);setUndoCount(history.current.length);setRedoCount(future.current.length);}
   function redo(){if(!future.current.length)return;history.current.push(new Uint8ClampedArray(current.current));const v=future.current.pop()!;current.current=v;setData(v);setRevision(n=>n+1);setUndoCount(history.current.length);setRedoCount(future.current.length);}
   useEffect(()=>{const saved=readSaved();if(saved){
-    // The original release autosaved its untouched mannequin. Upgrade only that exact default.
-    const untouched=blankSkin();
+    // Preserve edited work; an untouched prior example becomes the new guide start.
+    const untouched=sampleSkin(saved.model);
     if(saved.data.every((value,index)=>value===untouched[index]))return;
     current.current=saved.data;setData(saved.data);setModel(saved.model);setStatus('브라우저에 저장된 이전 작업을 복원했습니다.');
   }},[]);
   useEffect(()=>{const id=window.setTimeout(()=>{try{localStorage.setItem(CACHE,JSON.stringify({rgba:btoa(String.fromCharCode(...data)),model}));}catch{setStatus('브라우저 저장 공간이 부족합니다. PNG를 다운로드해 보관하세요.');}},500);return()=>clearTimeout(id)},[data,model]);
+  useEffect(()=>{try{localStorage.setItem(RECENT_COLORS,JSON.stringify(recentColors))}catch{/* Browser storage is optional. */}},[recentColors]);
   useEffect(()=>{const el=viewerCanvas.current;if(!el)return;try{
     const rect=el.parentElement!.getBoundingClientRect();const v=new SkinViewer({canvas:el,width:Math.max(280,Math.floor(rect.width)),height:Math.max(340,Math.floor(rect.height)),skin:canvasFromData(current.current),model:modelRef.current,zoom:0.72,background:0x151d28});
     v.animation=new IdleAnimation();viewer.current=v;
@@ -100,14 +104,15 @@ export default function App(){
     const region=findRegion(modelRef.current,x,y,layerRef.current);setHover(region||null);
     if(!region||region.part!==partRef.current)return;
     const t=toolRef.current;
-    if(t==='picker'){setColor(rgbaHex(current.current,x,y));setStatus(`${x}, ${y} 색상을 선택했습니다.`);return;}
+    if(t==='picker'){setColor(rgbaHex(current.current,x,y));setColorAlpha(current.current[pixelIndex(x,y)+3]);setStatus(`${x}, ${y} 색상을 선택했습니다.`);return;}
     const rgba=t==='eraser'?layerRef.current==='overlay'?[0,0,0,0]:[0,0,0,255]:hexRgba(colorRef.current,layerRef.current==='base'?255:alphaRef.current);
     if(t==='fill'&&!first)return;
     const next=t==='fill'?fill(current.current,x,y,rgba,region.rect):paint(current.current,x,y,rgba);
     if(first){history.current.push(new Uint8ClampedArray(current.current));if(history.current.length>40)history.current.shift();future.current=[];setUndoCount(history.current.length);setRedoCount(0);}
+    if(first&&t!=='eraser')setRecentColors(prev=>[colorRef.current,...prev.filter(c=>c!==colorRef.current)].slice(0,12));
     commit(next,false);
   }
-  function apply(e:React.PointerEvent<HTMLCanvasElement>,first:boolean){const {x,y}=uvPoint(e);applyAt(x,y,first)}
+  function apply(e:React.PointerEvent<HTMLCanvasElement>,first:boolean){const {x,y}=uvPoint(e);if(first){const r=findRegion(modelRef.current,x,y);if(r){partRef.current=r.part;layerRef.current=r.layer;setPart(r.part);setLayer(r.layer);setFace(r.face)}}applyAt(x,y,first)}
   function setPresetView(angle:number,pitch=0){
     const v=viewer.current;
     if(!v){softwareControls.current?.set(-angle,pitch,.87);return;}
@@ -151,19 +156,20 @@ export default function App(){
     }catch(e){setStatus(e instanceof Error?e.message:'AI 생성에 실패했습니다.');}finally{setAIBusy(false)}
   }
   function download(){const c=canvasFromData(data);c.toBlob(blob=>{if(!blob){setStatus('PNG 생성에 실패했습니다.');return;}const a=document.createElement('a');const url=URL.createObjectURL(blob);a.href=url;a.download=`minecraft-skin-${model==='slim'?'alex':'steve'}.png`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setStatus('64×64 PNG를 다운로드했습니다. 게임 업로드 시 같은 팔 모델을 선택하세요.');},'image/png');}
-  const selected=hover&&hover.part===part&&hover.layer===layer?`${parts.find(p=>p.id===hover.part)?.label} · ${labels[hover.face]} · ${hover.rect.x},${hover.rect.y}`:'선택한 부위의 테두리 안에서 편집하세요';
+  const selected=hover?`${parts.find(p=>p.id===hover.part)?.label} · ${labels[hover.face]} · ${hover.rect.x},${hover.rect.y}`:'도면에서 원하는 면을 클릭하면 자동으로 선택됩니다';
+  const isGuide=data.every((v,i)=>v===GUIDE[i]);
   return <div className="app">
     <header className="topbar"><div className="brand"><div className="brand-mark">▦</div><div><strong>SKIN STUDIO</strong><small>MINECRAFT · 64×64</small></div></div><span className="version">ENGINE v0.2 · 편집 가능 / AI 연결 대기</span><button className="primary download-top" onClick={download}>↓ PNG 다운로드</button></header>
     <main ref={workspaceRef} className="workspace" style={{'--preview-width':`${previewWidth}px`} as React.CSSProperties}>
       <aside className="side left"><div className="section-title"><span className="num">01</span><div><h2>시작하기</h2><p>스킨 텍스처 또는 참고 이미지</p></div></div>
-        <div className="panel"><div className="panel-label">스킨 파일</div><p className="hint">64×64 PNG · 편집 가능한 실제 스킨</p><input ref={fileInput} type="file" accept="image/png" hidden onChange={e=>importSkin(e.target.files?.[0])}/><button className="wide-button" onClick={()=>fileInput.current?.click()}>↑ 기존 스킨 불러오기</button><div className="split"><button onClick={()=>{commit(blankSkin());setStatus('빈 스킨을 만들었습니다.');}}>빈 스킨</button><button onClick={()=>{commit(sampleSkin(model));setStatus('편집용 예시 스킨을 불러왔습니다. AI 생성 결과가 아닙니다.');}}>예시 스킨</button></div></div>
+        <div className="panel"><div className="panel-label">스킨 파일</div><p className="hint">처음에는 기본형 가이드 스킨으로 시작합니다.</p><input ref={fileInput} type="file" accept="image/png" hidden onChange={e=>importSkin(e.target.files?.[0])}/><button className="wide-button" onClick={()=>fileInput.current?.click()}>↑ 기존 스킨 불러오기</button><div className="split"><button onClick={()=>{commit(blankSkin());setStatus('기본형 가이드 스킨을 불러왔습니다.');}}>기본형</button><button onClick={()=>{commit(sampleSkin(model));setStatus('편집용 예시 스킨을 불러왔습니다. AI 생성 결과가 아닙니다.');}}>예시 스킨</button></div></div>
         <div className="panel"><div className="panel-label">원본 이미지 <span className="badge">AI / 수동 비교</span></div><input ref={refInput} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={e=>importReference(e.target.files?.[0])}/>{reference?<div className="reference"><img src={reference} alt="업로드한 참고 이미지"/><button onClick={()=>refInput.current?.click()}>이미지 교체</button><button onClick={()=>{setReference(null);setAIDescription('')}}>제거</button></div>:<button className="reference-empty" onClick={()=>refInput.current?.click()}>+ 사진 · 일러스트 추가</button>}
           <button className="wide-button ai-generate" disabled={!reference||!aiReady||aiBusy} onClick={generateAI}>{aiBusy?'분석 · UV 제작 중…':'✦ 이미지로 AI 스킨 생성'}</button>
           <p className="hint">{aiReady?'이미지를 OpenAI API에 전송해 특징을 분석한 뒤 64×64 픽셀로 조립합니다. API 비용이 발생할 수 있습니다.':'AI 서버 인증 키 연결 대기. 이미지 비교와 직접 편집은 바로 이용할 수 있습니다.'}</p>{aiDescription&&<p className="ai-description">{aiDescription}</p>}
         </div>
         <div className="panel info"><div className="panel-label">현재 작업</div><div className="info-row"><span>텍스처</span><strong>64 × 64 · RGBA</strong></div><div className="info-row"><span>팔 모델</span><strong>{model==='slim'?'Alex · 3px':'Steve · 4px'}</strong></div><div className="info-row"><span>저장</span><strong>이 브라우저에 자동 저장</strong></div><p className="hint">자동 저장은 현재 브라우저에만 남습니다. 보관하려면 PNG를 다운로드하세요.</p></div>
       </aside>
-      <section className="center"><div className="viewer-head"><div><span className="eyebrow">LIVE PREVIEW / 실제 텍스처</span><h1>3D 스킨 미리보기</h1></div><span className="live"><i/> LIVE</span></div><div className="viewer" aria-label="스킨 3D 미리보기"><canvas ref={viewerCanvas}/><div className="viewer-note">드래그하여 회전 · 스크롤 또는 핀치로 확대</div></div>
+      <section className="center"><div className="viewer-head"><div><span className="eyebrow">LIVE PREVIEW / 실제 텍스처</span><h1>3D 스킨 미리보기</h1></div><span className="live"><i/> {isGuide?'GUIDE':'LIVE'}</span></div><div className="viewer" aria-label="스킨 3D 미리보기"><canvas ref={viewerCanvas}/><div className="viewer-note">{isGuide?'기본형 가이드 · 스킨을 불러오거나 직접 칠해보세요':'드래그하여 회전 · 스크롤 또는 핀치로 확대'}</div></div>
         <div className="view-controls"><div className="view-row"><span>시점</span>{([['정면',0,0],['후면',Math.PI,0],['왼쪽',-Math.PI/2,0],['오른쪽',Math.PI/2,0],['상단',0,1.08]] as const).map(([name,angle,pitch])=><button key={name} onClick={()=>setPresetView(angle,pitch)}>{name}</button>)}</div><div className="view-row"><span>동작</span>{([['stop','정지'],['idle','대기'],['walk','걷기'],['run','달리기']] as const).map(([id,label])=><button key={id} className={animation===id?'active':''} onClick={()=>setAnimation(id)}>{label}</button>)}</div></div>
       </section>
       <div className="split-handle" role="separator" aria-label="3D 미리보기와 편집기 너비 조절" aria-orientation="vertical" tabIndex={0}
@@ -173,20 +179,20 @@ export default function App(){
         title="좌우로 드래그해 작업 영역 너비를 조절하세요"><span/></div>
       <aside className="side right"><div className="section-title"><span className="num">02</span><div><h2>픽셀 편집기</h2><p>실제 UV 도면을 직접 수정합니다</p></div></div>
         <div className="editor-settings"><div className="setting"><label>팔 모델</label><div className="segmented"><button className={model==='default'?'active':''} onClick={()=>setModel('default')}>Steve · 4px</button><button className={model==='slim'?'active':''} onClick={()=>setModel('slim')}>Alex · 3px</button></div></div><div className="setting"><label htmlFor="part">편집 부위</label><select id="part" value={part} onChange={e=>setPart(e.target.value as Part)}>{parts.map(p=><option key={p.id} value={p.id}>{p.label}</option>)}</select></div><div className="setting"><label>텍스처 레이어</label><div className="segmented"><button className={layer==='base'?'active':''} onClick={()=>setLayer('base')}>기본</button><button className={layer==='overlay'?'active':''} onClick={()=>setLayer('overlay')}>오버레이</button></div></div></div>
-        <div className="face-header"><strong>{parts.find(p=>p.id===part)?.label} · {labels[face]}</strong><span>이 면을 크게 보며 픽셀을 칠하세요</span></div>
-        <div className="face-tabs" aria-label="편집할 면">{(['front','back','left','right','top','bottom'] as Face[]).map(id=><button key={id} className={face===id?'active':''} onClick={()=>setFace(id)}>{labels[id]}</button>)}</div>
-        <div className="face-viewport"><canvas ref={faceCanvas} aria-label={`${parts.find(p=>p.id===part)?.label} ${labels[face]} 픽셀 편집`}
-          onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);drawing.current=true;const {x,y}=facePoint(e);applyAt(x,y,true)}}
-          onPointerMove={e=>{if(drawing.current&&e.buttons){const {x,y}=facePoint(e);applyAt(x,y,false)}}}
-          onPointerUp={()=>{drawing.current=false}} onPointerCancel={()=>{drawing.current=false}}/></div>
-        <div className="zoom-row"><span>픽셀 크기 {faceZoom}px</span><input aria-label="면 확대" type="range" min="16" max="64" value={faceZoom} onChange={e=>setFaceZoom(Number(e.target.value))}/><button className="plain" onClick={()=>setGrid(!grid)}>{grid?'▦ 그리드':'□ 그리드'}</button></div>
-        <details className="atlas-details"><summary>전체 64×64 UV 도면 열기 <span>{selected}</span></summary>
-          <div className="uv-viewport"><canvas ref={uvCanvas} width={512} height={512} style={{width:64*zoom,height:64*zoom}} onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);drawing.current=true;apply(e,true);}} onPointerMove={e=>{const {x,y}=uvPoint(e);setHover(findRegion(model,x,y,layer)||null);if(drawing.current&&e.buttons)apply(e,false);}} onPointerUp={()=>{drawing.current=false}} onPointerCancel={()=>{drawing.current=false}}/></div>
-          <div className="zoom-row"><span>도면 {zoom}×</span><input aria-label="UV 도면 확대" type="range" min="5" max="32" value={zoom} onChange={e=>setZoom(Number(e.target.value))}/></div>
+        <div className="uv-header"><div><strong>전체 64×64 UV 도면</strong><span>{selected}</span></div><button className="plain" onClick={()=>setGrid(!grid)}>{grid?'▦ 그리드':'□ 그리드'}</button></div>
+        <div className="uv-viewport atlas-primary"><canvas ref={uvCanvas} width={512} height={512} style={{width:64*zoom,height:64*zoom}} onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);drawing.current=true;apply(e,true);}} onPointerMove={e=>{const {x,y}=uvPoint(e);setHover(findRegion(model,x,y)||null);if(drawing.current&&e.buttons)apply(e,false);}} onPointerUp={()=>{drawing.current=false}} onPointerCancel={()=>{drawing.current=false}}/></div>
+        <div className="zoom-row"><span>도면 {zoom}×</span><input aria-label="UV 도면 확대" type="range" min="5" max="32" value={zoom} onChange={e=>setZoom(Number(e.target.value))}/></div>
+        <details className="atlas-details face-details"><summary>선택한 면 크게 편집 <span>{parts.find(p=>p.id===part)?.label} · {labels[face]}</span></summary>
+          <div className="face-tabs" aria-label="편집할 면">{(['front','back','left','right','top','bottom'] as Face[]).map(id=><button key={id} className={face===id?'active':''} onClick={()=>setFace(id)}>{labels[id]}</button>)}</div>
+          <div className="face-viewport"><canvas ref={faceCanvas} aria-label={`${parts.find(p=>p.id===part)?.label} ${labels[face]} 픽셀 편집`}
+            onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);drawing.current=true;const {x,y}=facePoint(e);applyAt(x,y,true)}}
+            onPointerMove={e=>{if(drawing.current&&e.buttons){const {x,y}=facePoint(e);applyAt(x,y,false)}}}
+            onPointerUp={()=>{drawing.current=false}} onPointerCancel={()=>{drawing.current=false}}/></div>
+          <div className="zoom-row"><span>픽셀 크기 {faceZoom}px</span><input aria-label="면 확대" type="range" min="16" max="64" value={faceZoom} onChange={e=>setFaceZoom(Number(e.target.value))}/></div>
         </details>
         <div className="overlay-row"><button className="plain" onClick={()=>setOuter(!outer)}>{outer?'겉옷 레이어 표시 중':'겉옷 레이어 숨김'}</button></div>
         <div className="tool-row">{([['pen','✎','펜'],['eraser','◇','지우개'],['picker','♢','스포이트'],['fill','▨','채우기']] as const).map(([id,icon,label])=><button title={label} aria-label={label} key={id} className={tool===id?'active':''} onClick={()=>setTool(id)}><b>{icon}</b><small>{label}</small></button>)}</div>
-        <div className="color-section"><div className="color-title">색상 선택 <span>{layer==='base'?'기본 레이어는 불투명':'오버레이는 투명도 적용'}</span></div><ColorPicker hex={color} alpha={layer==='base'?255:colorAlpha} allowAlpha={layer==='overlay'} onChange={(hex,alpha)=>{setColor(hex);setColorAlpha(alpha)}}/><div className="swatches">{palette.map(p=><button key={p} title={p} aria-label={`${p} 색상`} style={{background:p}} onClick={()=>setColor(p)}/>)}</div></div>
+        <div className="color-section"><div className="color-title">색상 선택 <span>{layer==='base'?'기본 레이어는 불투명':'오버레이는 투명도 적용'}</span></div><ColorPicker hex={color} alpha={layer==='base'?255:colorAlpha} allowAlpha={layer==='overlay'} onChange={(hex,alpha)=>{setColor(hex);setColorAlpha(alpha)}}/><div className="recent-title">최근 사용한 색 <span>칠할 때 자동 저장 · 최대 12개</span></div><div className="swatches recent-colors">{recentColors.length?recentColors.map(p=><button key={p} title={p} aria-label={`최근 사용 색 ${p}`} style={{background:p}} onClick={()=>setColor(p)}/>):<p>색을 칠하면 이곳에 기록됩니다.</p>}</div></div>
         <div className="action-row"><button disabled={!undoCount} onClick={undo}>↶ 되돌리기</button><button disabled={!redoCount} onClick={redo}>↷ 다시 실행</button><button onClick={()=>{commit(clearRegion(data,part,layer,model));setStatus(`${parts.find(p=>p.id===part)?.label} ${layer==='base'?'기본':'오버레이'} 영역을 초기화했습니다.`);}}>영역 초기화</button></div>
         <button className="primary full-download" onClick={download}>↓ 실제 64×64 PNG 다운로드</button><div className="status" role="status">{status}</div>
       </aside>

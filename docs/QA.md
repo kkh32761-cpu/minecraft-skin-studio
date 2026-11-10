@@ -1,5 +1,12 @@
 # QA record · 2026-11-11
 
+## Revision 0.3
+
+- The full 64×64 atlas is visible by default. Clicking the body front in the atlas automatically selected Body and painted the pixel; the selected face remains available as an optional enlarged panel.
+- The plain guide skin rendered as a neutral basic model after pressing Basic. A new visitor starts with it; an unmodified previous example autosave upgrades to the guide, while changed work remains restorable.
+- Painting with two distinct HEX colors added recent color buttons in order `#112233`, `#5e3e58`; colors are bounded to 12 and stored in browser local storage. Old fixed swatches were removed.
+- `npm test`, `npm run build`, `npm run test:worker` passed after these changes. Live AI still has no configured provider key, so the generated likeness path remains unverified.
+
 ## Revision 0.2
 
 - The preset zoom bug came from `OrbitControls.reset()` restoring a camera at the model origin. Presets now set a safe camera radius. Managed browser showed rear and top hair after clicking their controls without oversized zoom. WebGL visual verification remains pending.
