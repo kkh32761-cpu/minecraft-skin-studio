@@ -1,5 +1,14 @@
 # QA record · 2026-11-11
 
+## Revision 0.2
+
+- The preset zoom bug came from `OrbitControls.reset()` restoring a camera at the model origin. Presets now set a safe camera radius. Managed browser showed rear and top hair after clicking their controls without oversized zoom. WebGL visual verification remains pending.
+- Desktop splitter drag changed preview/editor widths from 425/668 px to 308/785 px. Selected head face uses 8×8 pixels at 38 px each; zoom range is 16–64 px per pixel. Full UV atlas expands separately to 32×.
+- Initial project shows a textured face, hair, outfit and shoes. An exact untouched legacy mannequin autosave upgrades to this example; altered saved work is preserved.
+- RGBA numeric input changed the HEX value; clicking the face enabled Undo and increased the preview revision; Undo restored the prior state. HSVA controls appeared. Alpha is enabled only on overlay. PNG alpha roundtrip through this new control still needs browser validation.
+- `npm test`: 6 frontend UV/character cases and 3 legacy local analysis cases passed. `npm run build`: TypeScript/Vite/Worker bundle passed. `npm run test:worker`: static serving, missing-key and authentication refusal, and authenticated image → **mocked** provider response → 64×64 UV pixels passed. No live provider request or likeness comparison was made.
+- The Worker stores no uploaded image. Its per-user quota is in memory per isolate only, insufficient for unrestricted public access.
+
 ## Passing checks
 
 - `npm test`: 4 frontend test cases and 3 local analysis adapter tests (signature/size, missing-key refusal, mocked provider schema request/response) covering 72 atlas faces per model without overlap, official coordinate fixtures (head/body/limbs, Classic and Slim), integer edit/flood boundaries, opaque base and transparent overlay sample, dimension rejection.
