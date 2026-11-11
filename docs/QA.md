@@ -1,5 +1,12 @@
 # QA record · 2026-11-11
 
+## Revision 0.5 · free provider route
+
+- The deployed Worker source now requires `GEMINI_API_KEY` and calls the fixed Gemini 2.5 Flash image-understanding model. It never reads `OPENAI_API_KEY`, and quota exhaustion returns an error without a paid fallback. The OpenAI secret was removed from the Site's runtime settings.
+- The request sends resized image bytes and a structured character schema; response values are locally validated before the deterministic UV assembler receives them. The UI states that free-tier images may be used to improve Google products.
+- `npm run build`, `npm test` (7 frontend + 3 older loopback cases), and `npm run test:worker` (3 Worker cases, including mocked Gemini success and free-tier quota exhaustion) passed. These are mock-provider results; **no real Gemini key, request, generated likeness or game import has been verified**.
+- Google AI Studio onboarding requires the account owner to confirm age/developer status and accept its terms. The free-tier key and live API test remain pending. A free project has variable quotas; the five-per-hour Worker map is per isolate and is not a durable public-service limit.
+
 ## Revision 0.4 · hosted key connection
 
 - OpenAI Platform sign-in succeeded. The selected Personal organization / Default project showed $0.00 credit and zero requests. A new project key was saved to ignored `.env.local` and to the private Site's secret runtime setting; no key value entered source or test output.
