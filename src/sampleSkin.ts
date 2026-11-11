@@ -98,7 +98,7 @@ const body:FaceMap={
     'iHhH','iHHH','iHHi','ihHH','jiij','jijj'
   ],
   top:['lHHHHHHl','HHHHHHHH','hHHHHHHh','iHHHHHHi'],
-  bottom:['jiiHHiij','jiii ii j'.replace(/ /g,''),'jiiHHiij','jjjjjjjj']
+  bottom:['jiiHHiij','jiiHHiij','jiiHHiij','jjjjjjjj']
 };
 // Outer layers make the collar and hood perceptibly three-dimensional but
 // keep the front center open so the pocket and drawstrings remain visible.
