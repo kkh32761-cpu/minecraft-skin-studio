@@ -8,10 +8,10 @@ function isImage(mime:string,b:Uint8Array){return mime==='image/png'?b.length>8&
   mime==='image/jpeg'?b[0]===255&&b[1]===216&&b[2]===255:
   mime==='image/webp'?String.fromCharCode(...b.slice(0,4))==='RIFF'&&String.fromCharCode(...b.slice(8,12))==='WEBP':false;}
 function decode(base64:string){const binary=atob(base64),bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);return bytes;}
-export default {async fetch(request:Request,env:Env):Promise<Response>{
-  const url=new URL(request.url),path=url.pathname;
-  if(path==='/api/ai/status'&&request.method==='GET')return json({ready:Boolean(env.GEMINI_API_KEY),provider:'gemini-free',mode:'character-analysis-to-UV',authenticated:Boolean(request.headers.get('oai-authenticated-user-id'))});
-  if(path==='/api/ai/generate'&&request.method==='POST'){
+
+async function handleGeneration(request:Request,env:Env,send?:(event:Record<string,unknown>)=>void):Promise<Response>{
+  const url=new URL(request.url);
+
     const origin=request.headers.get('origin');if(origin&&origin!==url.origin)return json({error:'다른 사이트에서 생성 요청을 보낼 수 없습니다.'},403);
     const user=request.headers.get('oai-authenticated-user-id');
     if(!user)return json({error:'로그인이 필요합니다.'},401);
@@ -19,16 +19,49 @@ export default {async fetch(request:Request,env:Env):Promise<Response>{
     if(entry.count>=5)return json({error:'AI 생성은 한 시간에 5회까지 가능합니다.'},429);
     if(Number(request.headers.get('content-length')||0)>2.8*1024*1024)return json({error:'이미지 크기는 최대 2MB입니다.'},413);
     try{
+      send?.({type:'progress',stage:'preparing'});
       const body=await request.text();if(body.length>2.8*1024*1024)return json({error:'이미지 크기는 최대 2MB입니다.'},413);
       const payload=JSON.parse(body) as {mime:string;base64:string;model:string;apiKey?:string};
       const apiKey=env.GEMINI_API_KEY||payload.apiKey;
       if(!apiKey||!(/^(?:AIza[\w-]{25,200}|AQ\.[A-Za-z0-9_-]{20,200})$/.test(apiKey)))throw new GenerationError('Google AI Studio에서 발급한 Gemini API 키를 연결해 주세요.',400);
       if(!['default','slim'].includes(payload.model)||typeof payload.base64!=='string'||payload.base64.length>2.8*1024*1024||!/^[-A-Za-z0-9+/]*={0,2}$/.test(payload.base64))throw new GenerationError('이미지 데이터가 올바르지 않습니다.',400);
       const bytes=decode(payload.base64);if(bytes.length>2*1024*1024||!isImage(payload.mime,bytes))throw new GenerationError('PNG, JPG, WebP 이미지(최대 2MB)만 지원합니다.',400);
-      const spec=await analyzeGemini(payload.mime,payload.base64,apiKey);
+      const spec=await analyzeGemini(payload.mime,payload.base64,apiKey,(stage,attempt,reason)=>send?.({type:'progress',stage,attempt,reason}));
+      send?.({type:'progress',stage:'assembling'});
       entry.count++;quota.set(user,entry);
       return json({spec,pixels:Array.from(generateCharacter(spec,payload.model as 'default'|'slim'))});
     }catch(error){return json({error:error instanceof Error?error.message:'AI 생성에 실패했습니다.'},error instanceof GenerationError?error.status:error instanceof SyntaxError?400:502);}
+  }
+
+export default {async fetch(request:Request,env:Env):Promise<Response>{
+  const url=new URL(request.url),path=url.pathname;
+  if(path==='/api/ai/status'&&request.method==='GET')return json({ready:Boolean(env.GEMINI_API_KEY),provider:'gemini-free',mode:'character-analysis-to-UV',authenticated:Boolean(request.headers.get('oai-authenticated-user-id'))});
+  if(path==='/api/ai/generate'&&request.method==='POST'){
+    // NDJSON flushes real provider-attempt events while preserving the
+    // original JSON endpoint for older clients and integration checks.
+    if(request.headers.get('accept')?.includes('application/x-ndjson')){
+      const encoder=new TextEncoder();
+      const stream=new ReadableStream<Uint8Array>({
+        start(controller){
+          const send=(event:Record<string,unknown>)=>{
+            try{controller.enqueue(encoder.encode(JSON.stringify(event)+'\\n'));}catch{/* client disconnected */}
+          };
+          void handleGeneration(request,env,send).then(async response=>{
+            const payload=await response.json() as Record<string,unknown>;
+            if(response.ok)send({type:'complete',...payload});
+            else send({type:'error',status:response.status,error:payload.error||'AI 생성에 실패했습니다.'});
+          }).catch(()=>send({type:'error',status:502,error:'AI 생성 중 예상하지 못한 오류가 발생했습니다.'}))
+            .finally(()=>{try{controller.close();}catch{/* disconnected */}});
+        }
+      });
+      return new Response(stream,{headers:{
+        'Content-Type':'application/x-ndjson; charset=utf-8',
+        'Cache-Control':'no-cache, no-transform',
+        'X-Content-Type-Options':'nosniff',
+        'X-Accel-Buffering':'no'
+      }});
+    }
+    return handleGeneration(request,env);
   }
   if(request.method!=='GET'&&request.method!=='HEAD')return new Response('Method not allowed',{status:405});
   const key=path==='/'?'/index.html':path;const asset=ASSETS[key as keyof typeof ASSETS];
