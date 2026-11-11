@@ -5,12 +5,12 @@ import ColorPicker from './ColorPicker';
 import {assertSkinDimensions,blankSkin,canvasFromData,clearRegion,fill,findRegion,hexRgba,paint,parts,pixelIndex,regions,rgbaHex,sampleSkin,SIZE,type Face,type Layer,type Model,type Part,type Region} from './skin';
 const CACHE='minecraft-skin-studio-v1';
 const RECENT_COLORS='minecraft-skin-studio-recent-colors-v1';
-const GEMINI_KEY='minecraft-skin-studio-gemini-key-v1';
+const GEMINI_KEY='minecraft-skin-studio-gemini-key-v1'; // Legacy key removed on mount
 const GUIDE=blankSkin();
 type Tool='pen'|'eraser'|'picker'|'fill';
 type Animation='stop'|'idle'|'walk'|'run';
 function readRecentColors():string[]{try{const raw=JSON.parse(localStorage.getItem(RECENT_COLORS)||'[]');return Array.isArray(raw)?raw.filter((v:unknown)=>typeof v==='string'&&/^#[0-9a-f]{6}$/i.test(v)).slice(0,12):[]}catch{return []}}
-function readGeminiKey():string{try{return localStorage.getItem(GEMINI_KEY)||''}catch{return ''}}
+function clearLegacyGeminiKey(){try{localStorage.removeItem(GEMINI_KEY)}catch{/* storage unavailable */}}
 const labels: Record<string,string>={top:'윗면',bottom:'아랫면',left:'왼쪽 면',front:'앞면',right:'오른쪽 면',back:'뒷면'};
 function readSaved():{data:Uint8ClampedArray,model:Model}|null {
   try {const raw=JSON.parse(localStorage.getItem(CACHE)||'null'); if(!raw||!['slim','default'].includes(raw.model))return null;
@@ -29,7 +29,7 @@ export default function App(){
   const [recentColors,setRecentColors]=useState<string[]>(readRecentColors);
   const [aiReady,setAIReady]=useState(false);
   const [aiAuthenticated,setAIAuthenticated]=useState(false);
-  const [aiKey,setAIKey]=useState(readGeminiKey);
+  const [aiKey,setAIKey]=useState('');
   const [aiChecked,setAIChecked]=useState(false);
   const [aiBusy,setAIBusy]=useState(false);
   const [aiError,setAIError]=useState('');
@@ -57,7 +57,7 @@ export default function App(){
   const current=useRef(data),history=useRef<Uint8ClampedArray[]>([]),future=useRef<Uint8ClampedArray[]>([]),drawing=useRef(false);
   const modelRef=useRef(model),partRef=useRef(part),layerRef=useRef(layer),toolRef=useRef(tool),colorRef=useRef(color),alphaRef=useRef(colorAlpha);
   current.current=data;modelRef.current=model;partRef.current=part;layerRef.current=layer;toolRef.current=tool;colorRef.current=color;alphaRef.current=colorAlpha;
-  useEffect(()=>{fetch('/api/ai/status').then(r=>r.ok?r.json():null).then(v=>{setAIReady(Boolean(v?.ready&&v?.authenticated));setAIAuthenticated(Boolean(v?.authenticated));}).catch(()=>{setAIReady(false);setAIAuthenticated(false)}).finally(()=>setAIChecked(true));},[]);
+  useEffect(()=>{clearLegacyGeminiKey();fetch('/api/ai/status').then(r=>r.ok?r.json():null).then(v=>{setAIReady(Boolean(v?.ready&&v?.authenticated));setAIAuthenticated(Boolean(v?.authenticated));}).catch(()=>{setAIReady(false);setAIAuthenticated(false)}).finally(()=>setAIChecked(true));},[]);
   function commit(next:Uint8ClampedArray,saveHistory=true){
     if(next===current.current)return;
     if(saveHistory){history.current.push(new Uint8ClampedArray(current.current));if(history.current.length>40)history.current.shift();future.current=[];}
@@ -71,7 +71,7 @@ export default function App(){
   }},[]);
   useEffect(()=>{const id=window.setTimeout(()=>{try{localStorage.setItem(CACHE,JSON.stringify({rgba:btoa(String.fromCharCode(...data)),model}));}catch{setStatus('브라우저 저장 공간이 부족합니다. PNG를 다운로드해 보관하세요.');}},500);return()=>clearTimeout(id)},[data,model]);
   useEffect(()=>{try{localStorage.setItem(RECENT_COLORS,JSON.stringify(recentColors))}catch{/* Browser storage is optional. */}},[recentColors]);
-  useEffect(()=>{try{if(aiKey.trim())localStorage.setItem(GEMINI_KEY,aiKey.trim());else localStorage.removeItem(GEMINI_KEY)}catch{setStatus('키를 브라우저에 저장하지 못했습니다. 브라우저 저장 설정을 확인하세요.')}},[aiKey]);
+  // API keys are kept in React memory only and disappear on a page reload.
   useEffect(()=>{if(!aiBusy)return;const id=window.setInterval(()=>setAIElapsed(n=>n+1),1000);return()=>clearInterval(id)},[aiBusy]);
   useEffect(()=>{const el=viewerCanvas.current;if(!el)return;try{
     const rect=el.parentElement!.getBoundingClientRect();const v=new SkinViewer({canvas:el,width:Math.max(280,Math.floor(rect.width)),height:Math.max(340,Math.floor(rect.height)),skin:canvasFromData(current.current),model:modelRef.current,zoom:0.72,background:0x151d28});
@@ -177,7 +177,7 @@ export default function App(){
       <aside className="side left"><div className="section-title"><span className="num">01</span><div><h2>시작하기</h2><p>스킨 텍스처 또는 참고 이미지</p></div></div>
         <div className="panel"><div className="panel-label">스킨 파일</div><p className="hint">처음에는 기본형 가이드 스킨으로 시작합니다.</p><input ref={fileInput} type="file" accept="image/png" hidden onChange={e=>importSkin(e.target.files?.[0])}/><button className="wide-button" onClick={()=>fileInput.current?.click()}>↑ 기존 스킨 불러오기</button><div className="split"><button onClick={()=>{commit(blankSkin());setStatus('기본형 가이드 스킨을 불러왔습니다.');}}>기본형</button><button onClick={()=>{setModel('slim');commit(sampleSkin('slim'));setStatus('Alex용 편집 예시 스킨을 불러왔습니다. AI 생성 결과가 아닙니다.');}}>예시 스킨</button></div></div>
         <div className="panel"><div className="panel-label">원본 이미지 <span className="badge">AI / 수동 비교</span></div><input ref={refInput} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={e=>importReference(e.target.files?.[0])}/>{reference?<div className="reference"><img src={reference} alt="업로드한 참고 이미지"/><button onClick={()=>refInput.current?.click()}>이미지 교체</button><button onClick={()=>{setReference(null);setAIDescription('')}}>제거</button></div>:<button className="reference-empty" onClick={()=>refInput.current?.click()}>+ 사진 · 일러스트 추가</button>}
-          {!aiReady&&aiChecked&&<div className="ai-key-setup"><label htmlFor="gemini-key">내 Gemini 무료 API 키</label><input id="gemini-key" type="password" value={aiKey} onChange={e=>setAIKey(e.target.value)} autoComplete="off" spellCheck={false} placeholder="Google AI Studio에서 만든 키 붙여넣기"/><div className="ai-key-actions"><a href="https://aistudio.google.com/api-keys" target="_blank" rel="noopener noreferrer">Google AI Studio에서 무료 키 만들기 ↗</a><button type="button" onClick={()=>{setAIKey('');setStatus('이 브라우저에 저장된 Gemini 키를 삭제했습니다.')}} disabled={!aiKey}>저장된 키 삭제</button></div><p className="hint">키는 이 브라우저에 저장됩니다. 공용 PC에서는 사용하지 마세요. 생성할 때만 AI 서버로 전송합니다.</p></div>}
+          {!aiReady&&aiChecked&&<div className="ai-key-setup"><label htmlFor="gemini-key">내 Gemini 무료 API 키</label><input id="gemini-key" type="password" value={aiKey} onChange={e=>setAIKey(e.target.value)} autoComplete="off" spellCheck={false} placeholder="Google AI Studio에서 만든 키 붙여넣기"/><div className="ai-key-actions"><a href="https://aistudio.google.com/api-keys" target="_blank" rel="noopener noreferrer">Google AI Studio에서 무료 키 만들기 ↗</a><button type="button" onClick={()=>{setAIKey('');clearLegacyGeminiKey();setStatus('현재 입력한 Gemini 키를 지웠습니다.')}} disabled={!aiKey}>입력한 키 지우기</button></div><p className="hint">키는 브라우저에 저장되지 않으며 새로고침하면 사라집니다. 생성할 때만 로그인된 AI 서버로 전송합니다.</p></div>}
           <button className="wide-button ai-generate" disabled={!reference||!aiConfigured||!aiAuthenticated||aiBusy} onClick={generateAI}>{aiBusy?'분석 · UV 제작 중…':'✦ 이미지로 AI 스킨 생성'}</button>
           {aiBusy&&<div className="ai-progress" role="status" aria-live="polite"><strong>{aiPhase==='preparing'?'이미지 검사 중':aiPhase==='waiting'?'Gemini 이미지 분석 응답 대기 중':'64×64 픽셀 조립 · 미리보기 반영 중'}</strong><span>{aiElapsed}초 경과</span><div className="ai-progress-track"><div className={aiPhase==='waiting'?'waiting':''}/></div><small>{aiPhase==='waiting'?'AI 서버는 세부 완료율을 제공하지 않습니다. 응답이 오면 다음 단계로 넘어갑니다.':'실제 완료된 단계만 표시합니다.'}</small></div>}
           {aiError&&<p className="ai-error" role="alert">생성 실패: {aiError}</p>}

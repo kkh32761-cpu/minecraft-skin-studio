@@ -66,5 +66,42 @@ export function generateCharacter(spec:CharacterSpec,model:Model):Uint8ClampedAr
     }else if(part==='body'&&s.outfitStyle==='jacket'&&face==='front'&&dy>=2&&dy<=10&&(dx===1||dx===6))color=c.topShade;
     if(color)dot(r.x+dx,r.y+dy,color);
   }
+  // A small face-art pass produces readable pixel eyes and hair highlights.
+  // All coordinates remain inside the mapped head faces; the actual atlas is
+  // still the single source of truth for the 3D viewer and exported PNG.
+  const front=regions(model).find(r=>r.part==='head'&&r.layer==='base'&&r.face==='front')!.rect;
+  const overlay=regions(model).find(r=>r.part==='head'&&r.layer==='overlay'&&r.face==='front')!.rect;
+  const eyeY=s.eyeStyle==='soft'?4:4;
+  const eyeWhite=shade(c.skin,36), eyeDark=shade(c.eyes,-42);
+  for(const eyeX of [2,5]){
+    dot(front.x+eyeX,front.y+eyeY, c.eyes);
+    if(s.eyeStyle==='large'){
+      dot(front.x+eyeX,front.y+eyeY+1,c.eyes);
+      dot(front.x+eyeX,front.y+eyeY-1,eyeDark);
+      dot(front.x+eyeX,front.y+eyeY+2,shade(c.skin,-9));
+    }else{
+      dot(front.x+eyeX,front.y+eyeY-1,shade(c.hair,-20));
+      dot(front.x+eyeX,front.y+eyeY+1,shade(c.skin,-12));
+    }
+    // Tiny corner highlight preserves the observed iris hue at the central pixel.
+    const corner=eyeX===2?eyeX-1:eyeX+1;
+    dot(front.x+corner,front.y+eyeY,eyeWhite);
+  }
+  // Texture continuity: use sparse accent pixels, not noisy all-over patterns.
+  for(const x of [1,3,6]){
+    dot(overlay.x+x,overlay.y+(x===3?1:0),c.hairShade);
+  }
+  if(s.hairStyle==='fringe'){
+    for(const x of [1,2,5,6])dot(overlay.x+x,overlay.y+2,c.hair);
+    dot(overlay.x+2,overlay.y+3,c.hairShade);
+  }
+  if(s.hairStyle==='side_swept'){
+    for(const [x,y] of [[1,2],[2,2],[3,2],[1,3]] as const)dot(overlay.x+x,overlay.y+y,c.hairShade);
+  }
+  if(s.outfitStyle==='uniform'||s.outfitStyle==='jacket'){
+    const chest=regions(model).find(r=>r.part==='body'&&r.layer==='base'&&r.face==='front')!.rect;
+    for(const [x,y] of [[2,2],[5,2],[3,5],[4,5]] as const)dot(chest.x+x,chest.y+y,c.topShade);
+    for(const y of [6,9])dot(chest.x+4,chest.y+y,c.accent);
+  }
   return out;
 }
