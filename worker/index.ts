@@ -44,7 +44,7 @@ export default {async fetch(request:Request,env:Env):Promise<Response>{
       const stream=new ReadableStream<Uint8Array>({
         start(controller){
           const send=(event:Record<string,unknown>)=>{
-            try{controller.enqueue(encoder.encode(JSON.stringify(event)+'\\n'));}catch{/* client disconnected */}
+            try{controller.enqueue(encoder.encode(JSON.stringify(event)+'\n'));}catch{/* client disconnected */}
           };
           void handleGeneration(request,env,send).then(async response=>{
             const payload=await response.json() as Record<string,unknown>;
