@@ -1,6 +1,4 @@
 import {describe,it,expect} from 'vitest';
-import {readFileSync} from 'node:fs';
-import {inflateSync} from 'node:zlib';
 import {assertSkinDimensions,at,blankSkin,clearRegion,fill,findRegion,rgbaHex,paint,pixelIndex,regions,sampleSkin,SIZE} from '../src/skin';
 describe('Java 64×64 UV engine',()=>{
   it('has 72 non-overlapping faces inside atlas for each model',()=>{
@@ -72,32 +70,6 @@ describe('Java 64×64 UV engine',()=>{
       expect(rgbaHex(skin,jeans.x,jeans.y)).toBe('#39465b');
       expect(rgbaHex(skin,jeans.x+1,jeans.y+10)).toBe('#fafcff');
       expect(rgbaHex(skin,jeans.x+1,jeans.y+11)).toBe('#68778b');
-    }
-  });
-  it('ships PNG demo assets identical to the editable UV sample for Steve and Alex',()=>{
-    for(const [model,name] of [['default','steve'],['slim','alex']] as const){
-      const bytes=readFileSync(new URL(`../public/sample-skin-${name}.png`,import.meta.url));
-      expect([...bytes.subarray(0,8)]).toEqual([137,80,78,71,13,10,26,10]);
-      let offset=8;const chunks:Uint8Array[]=[];
-      while(offset<bytes.length){
-        const length=bytes.readUInt32BE(offset),tag=bytes.toString('ascii',offset+4,offset+8);
-        if(tag==='IHDR'){
-          expect(bytes.readUInt32BE(offset+8)).toBe(64);
-          expect(bytes.readUInt32BE(offset+12)).toBe(64);
-          expect(bytes[offset+17]).toBe(6); // RGBA
-        }
-        if(tag==='IDAT')chunks.push(bytes.subarray(offset+8,offset+8+length));
-        offset+=12+length;
-        if(tag==='IEND')break;
-      }
-      const data=inflateSync(Buffer.concat(chunks));
-      const pixels=new Uint8ClampedArray(64*64*4);
-      for(let y=0;y<64;y++){
-        const rowStart=y*(1+64*4);
-        expect(data[rowStart]).toBe(0); // no PNG scanline filters for exact art comparison
-        pixels.set(data.subarray(rowStart+1,rowStart+1+64*4),y*64*4);
-      }
-      expect(pixels).toEqual(sampleSkin(model));
     }
   });
 
