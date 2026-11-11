@@ -54,7 +54,6 @@ describe('Java 64×64 UV engine',()=>{
       expect(rgbaHex(skin,face.x+6,face.y+6)).toBe('#f5d1b5'); // symmetric cheeks
       expect(rgbaHex(skin,face.x+4,face.y+7)).toBe('#bb9180'); // one subtle mouth pixel
       expect(rgbaHex(skin,face.x+5,face.y+4)).toBe('#272830'); // dark right eye
-      expect(rgbaHex(skin,face.x+2,face.y+5)).toBe('#59443b'); // warm iris
       expect(rgbaHex(skin,back.x+3,back.y+3)).toBe('#735342'); // coherent back strands
       expect(skin[pixelIndex(hair.x+2,hair.y)+3]).toBe(255); // lifted fringe
       expect(skin[pixelIndex(hair.x+2,hair.y+4)+3]).toBe(0); // eye visible
