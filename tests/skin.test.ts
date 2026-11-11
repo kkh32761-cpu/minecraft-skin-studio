@@ -38,4 +38,15 @@ describe('Java 64×64 UV engine',()=>{
     }
     expect(()=>assertSkinDimensions(64,64)).not.toThrow();expect(()=>assertSkinDimensions(128,128)).toThrow();
   });
+  it('keeps the example eyes readable beneath the raised goggles in both arm models',()=>{
+    for(const model of ['default','slim'] as const){
+      const skin=sampleSkin(model);
+      const head=regions(model).find(v=>v.part==='head'&&v.layer==='base'&&v.face==='front')!.rect;
+      const goggles=regions(model).find(v=>v.part==='head'&&v.layer==='overlay'&&v.face==='front')!.rect;
+      expect(rgbaHex(skin,head.x+2,head.y+4)).toBe('#263f5b');
+      expect(rgbaHex(skin,head.x+5,head.y+4)).toBe('#263f5b');
+      expect(skin[pixelIndex(goggles.x+2,goggles.y+4)+3]).toBe(0);
+      expect(skin[pixelIndex(goggles.x+1,goggles.y)+3]).toBe(255);
+    }
+  });
 });

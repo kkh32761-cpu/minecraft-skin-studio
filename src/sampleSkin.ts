@@ -1,106 +1,106 @@
 import type {Region} from './skin';
 
-// A hand-authored 64×64 character: warm face, layered dark hair, coral scarf,
-// navy field jacket and worn boots. Every symbol maps to one exact RGBA pixel.
+// Original hand-painted blue-haired explorer, inspired by the user's quality reference.
+// The goggles, fringe, coat, cuffs and boots use Minecraft's real outer UV layer.
 const palette:Record<string,string>={
-  H:'#392d3b',h:'#593d50',j:'#806176',K:'#24232e',
-  s:'#dba98b',l:'#efc6a5',d:'#b98172',p:'#c98485',m:'#87535b',
-  E:'#243c50',e:'#64a6af',W:'#f8eee1',
-  N:'#344c66',n:'#4d7088',B:'#26394f',b:'#6e90a0',
-  C:'#ded1b3',c:'#afa38b',R:'#c56e50',r:'#ee9c69',q:'#954e43',
-  T:'#76534b',t:'#a37a5b',G:'#d9b36c',
-  P:'#35445d',v:'#596b81',Q:'#29374f',
-  O:'#3a3438',o:'#80604e',X:'#252b33'
+  H:'#69b8dc',h:'#438db9',j:'#a5daf2',K:'#2b739e',
+  a:'#eec9b6',b:'#ffe0c9',d:'#cda28f',p:'#e8a6a5',m:'#916b73',
+  E:'#263f5b',e:'#388dc5',w:'#9fd8ed',W:'#f6f6f1',
+  S:'#f0eef0',s:'#c6c3cc',D:'#8d8d9a',F:'#5b6073',
+  L:'#87bddb',l:'#d0eef7',R:'#428fc1',r:'#8bcbe8',T:'#8fa5b6',G:'#d84b43',
+  Q:'#888590',q:'#64616f',P:'#e1dce0',O:'#a7aab2',o:'#e8e9e8',X:'#535864'
 };
 const rgba=Object.fromEntries(Object.entries(palette).map(([symbol,hex])=>[symbol,[...hex.match(/\w\w/g)!.map(n=>parseInt(n,16)),255]])) as Record<string,number[]>;
 type FaceMap=Partial<Record<Region['face'],string[]>>;
 const head:FaceMap={
   front:[
-    'HHHhhHHH','HjHHhHHH','HHHllHHH','HssssssH',
-    'HseEsEeH','HspsspsH','HsssmssH','dssssssd'
+    'HhHHHHhH','HjHHjHjH','HHHbbHHH','HbaaaabH',
+    'HWEaaEWH','HweaaewH','HpbaabpH','HaaamaaH'
   ],
   back:[
-    'HHHHHHHH','HHjHhHHH','HhHHHHhH','HHHHjHHH',
-    'HhHHHHhH','HHHHhHHH','HhHHHHhH','KKHHHHKK'
+    'HHHHHHHH','HjHHhHjH','HHHHHHHH','HhHHHHhH',
+    'HHjHHjHH','HhHHHHhH','HHHHHHHH','KKHHHHKK'
   ],
   left:[
-    'HHHHHHHH','HjHhHHHH','HHHHHHHH','HHHsssss',
-    'HHHsdsss','HHHsssss','HHHHdsss','KKHHdddd'
+    'HHHHHHHH','HjHHHHhH','HHHHHHHH','HHHaaaaa',
+    'HHHdaaaa','HHHaaaaa','HHHHdaaa','hHHHdddd'
   ],
   right:[
-    'HHHHHHHH','HHHhHjHH','HHHHHHHH','sssssHHH',
-    'sssd sHHH'.replace(' ',''),'sssssHHH','sssdHHHH','ddddHHKK'
+    'HHHHHHHH','HhHHHHjH','HHHHHHHH','aaaaaHHH',
+    'aaaadHHH','aaaaaHHH','aaadHHHH','ddddHHHh'
   ],
   top:[
-    'KKHHHHKK','KHHhHHHK','HHHjHHHH','HHHHHHhH',
-    'HhHHHHHH','HHHHjHHH','KHHHHHhK','KKHHHHKK'
+    'KKHHHHKK','KHHHHHHK','HHjHHjHH','HHHHHHHH',
+    'HhHHHHhH','HHHHHHHH','KHHHHHHK','KKHHHHKK'
   ],
-  bottom:['dddddddd','dssssssd','dssssssd','dssssssd','dssssssd','dssssssd','dssssssd','dddddddd']
+  bottom:['dddddddd','daaaaaad','daaaaaad','daaaaaad','daaaaaad','daaaaaad','daaaaaad','dddddddd']
 };
 const headOuter:FaceMap={
   front:[
-    'KHHHHHHK','HjHHhHhH','HH..HHHH','H......H',
-    '........','........','........','........'
+    'FLLFFLLF','HjHHjHjH','HH....HH','H......H',
+    'h......h','H......H','h......h','........'
   ],
   back:[
-    'HHHHHHHH','HH..h.HH','H......H','H......H',
-    'H......H','H......H','HH....HH','KKHHHHKK'
+    'FFFFFFFF','F......F','H......H','H......H',
+    'H......H','H......H','H......H','HH....HH'
   ],
   left:[
-    'HHHHHHHH','H......H','H......H','H......H',
-    'H......H','H......H','HH....HH','KKHHHHKK'
+    'FFFFFFFF','F......F','F......F','H......H',
+    'H......H','H......H','H......H','HH....HH'
   ],
   right:[
-    'HHHHHHHH','H......H','H......H','H......H',
-    'H......H','H......H','HH....HH','KKHHHHKK'
+    'FFFFFFFF','F......F','F......F','H......H',
+    'H......H','H......H','H......H','HH....HH'
   ],
   top:[
-    'KKHHHHKK','K......K','H......H','H......H',
-    'H......H','H......H','K......K','KKHHHHKK'
+    'FLLLLLLF','FllllllF','F......F','F......F',
+    'F......F','F......F','F......F','FFFFFFFF'
   ]
 };
 const body:FaceMap={
   front:[
-    'NNRRRRNN','NnrRRrnN','NnqCCqnN','NncCCcnN',
-    'NncCGcnN','NncCCcnN','NncCGcnN','NncCCcnN',
-    'NNtTTtNN','NnTGG TnN'.replace(' ',''),'NNNTTNNN','BBNNNNBB'
+    'SSSssSSS','SsSRRSsS','SsRrrRsS','SsSRRSsS',
+    'SsSTTSsS','SsSTGSsS','SsSTTSsS','SsSTTSsS',
+    'SsSDDSsS','QQQQQQQQ','QqQqQqQq','qQQqQQQq'
   ],
   back:[
-    'BBRRRRBB','BNrrrrNB','BNqqqqNB','BNNNNNNB',
-    'BNNnnNNB','BNnBBnNB','BNnBBnNB','BNNNNNNB',
-    'BNTTTTNB','BNNTTNNB','BNNNNNNB','BBBBBBBB'
+    'SSSssSSS','SsSSSSsS','SsSssSsS','SsSSSSsS',
+    'SsSSSSsS','SsSSSSsS','SsSSSSsS','SsSSSSsS',
+    'SsSDDSsS','QQQQQQQQ','QqQqQqQq','qQQqQQQq'
   ],
-  left:[
-    'NNNN','nNNB','nNNB','nNNB','nNNB','nNNB',
-    'nNNB','nNNB','TTTB','tTNB','NNNB','BBBN'
-  ],
-  right:[
-    'NNNN','BNNn','BNNn','BNNn','BNNn','BNNn',
-    'BNNn','BNNn','BTTT','BNTt','BNNN','NBBB'
-  ],
-  top:['NNNNNNNN','NnnNNnnN','NNNNNNNN','NNNNNNNN'],
-  bottom:['BBBBBBBB','BBBBBBBB','BBBBBBBB','BBBBBBBB']
+  left:['SSSS','SsSs','SsSs','SsSs','SsSs','SsSs','SsSs','SsSs','SDDS','QQQQ','QqQq','qQQq'],
+  right:['SSSS','sSsS','sSsS','sSsS','sSsS','sSsS','sSsS','sSsS','SDDS','QQQQ','qQqQ','qQQq'],
+  top:['SSSSSSSS','SSssssSS','SSSSSSSS','SSSSSSSS'],
+  bottom:['qqqqqqqq','qqqqqqqq','qqqqqqqq','qqqqqqqq']
 };
 const bodyOuter:FaceMap={
   front:[
-    '.n....n.','nR....Rn','nR....Rn','n......n',
-    'n......n','n......n','n......n','n......n',
-    'n......n','n......n','........','........'
+    'H......H','j......j','H......H','h......h',
+    'S......S','s......s','S......S','s......s',
+    'S......S','S......S','q......q','q......q'
   ],
   back:[
-    '.N....N.','Nn....nN','Nn....nN','N......N',
-    'N......N','N......N','N......N','N......N',
-    'N......N','N......N','........','........'
-  ]
+    'H......H','j......j','H......H','H......H',
+    'H......H','s......s','S......S','s......s',
+    'S......S','S......S','q......q','q......q'
+  ],
+  left:['H..H','H..H','H..H','H..H','s..s','s..s','S..S','S..S','S..S','Q..Q','q..q','q..q'],
+  right:['H..H','H..H','H..H','H..H','s..s','s..s','S..S','S..S','S..S','Q..Q','q..q','q..q']
 };
-const legFront=['PPPP','vPPQ','vPPQ','vPPQ','vPPQ','vPPQ','vPPQ','vPPQ','OOOo','OooO','OooO','XXXX'];
-const legBack=['QQQQ','QPPQ','QPPQ','QPPQ','QPPQ','QPPQ','QPPQ','QPPQ','OOOO','OOOO','OooO','XXXX'];
-const legSide=['QQPQ','QPPQ','QPPQ','QPPQ','QPPQ','QPPQ','QPPQ','QPPQ','OOOO','OooO','OooO','XXXX'];
+const legFront=['QQQQ','QqQq','qQQq','baab','aaaa','aaaa','daaa','aaaa','PPPP','PssP','OooO','XXXX'];
+const legBack=['QQQQ','qQQq','qQQq','dddd','aaaa','aaaa','daaa','aaaa','PPPP','PssP','OOOO','XXXX'];
+const legSide=['QQQQ','qQQq','qQQq','daaa','aaaa','aaaa','daaa','aaaa','PPPP','PssP','OooO','XXXX'];
+const legOuter=['Q..Q','Q..Q','q..q','....','....','....','....','....','O..O','O..O','o..o','XXXX'];
 function armFace(width:number,front:boolean):string[]{
-  const sleeve=width===3?(front?'nNB':'BNN'):(front?'nNNB':'BNNn');
-  const cuff=width===3?'BBN':'BBNN';
-  const hand=width===3?'dss':'dsss';
-  return [sleeve,sleeve,sleeve,sleeve,sleeve,sleeve,sleeve,cuff,'TT'.padEnd(width,'T'),hand,hand,'d'.repeat(width)];
+  const white=front?(width===3?'sSS':'sSSs'):(width===3?'SsS':'SssS');
+  const band=width===3?'DSS':'DSsD';
+  const cuff=width===3?'FDD':'FDDF';
+  const hand=width===3?'daa':'daaa';
+  return [white,band,white,white,band,white,white,white,cuff,cuff,hand,'d'.repeat(width)];
+}
+function armOuter(width:number):string[]{
+  const edge=width===3?'S..':'S..S',cuff='D'.repeat(width);
+  return ['.'.repeat(width),edge,edge,edge,edge,edge,edge,edge,cuff,cuff,'.'.repeat(width),'.'.repeat(width)];
 }
 function solid(width:number,height:number,symbol:string):string[]{return Array(height).fill(symbol.repeat(width));}
 export function makeSampleSkin(atlas:Region[]):Uint8ClampedArray {
@@ -111,8 +111,8 @@ export function makeSampleSkin(atlas:Region[]):Uint8ClampedArray {
     let pattern:string[]|undefined;
     if(part==='head')pattern=(layer==='base'?head:headOuter)[face];
     else if(part==='body')pattern=(layer==='base'?body:bodyOuter)[face];
-    else if(layer==='base'&&leg)pattern=face==='front'?legFront:face==='back'?legBack:face==='left'||face==='right'?legSide:solid(rect.w,rect.h,face==='top'?'v':'X');
-    else if(layer==='base'&&arm)pattern=face==='front'||face==='back'?armFace(rect.w,face==='front'):solid(rect.w,rect.h,face==='top'?'n':face==='bottom'?'d':'N');
+    else if(leg)pattern=layer==='overlay'?(face==='front'||face==='back'?legOuter:undefined):face==='front'?legFront:face==='back'?legBack:face==='left'||face==='right'?legSide:solid(rect.w,rect.h,face==='top'?'Q':'X');
+    else if(arm)pattern=layer==='overlay'?(face==='front'||face==='back'?armOuter(rect.w):undefined):face==='front'||face==='back'?armFace(rect.w,face==='front'):solid(rect.w,rect.h,face==='top'?'S':face==='bottom'?'d':'s');
     if(!pattern)continue;
     if(pattern.length!==rect.h||pattern.some(row=>row.length!==rect.w))throw Error(`Sample art dimension mismatch: ${part}/${layer}/${face}`);
     pattern.forEach((row,dy)=>[...row].forEach((symbol,dx)=>{

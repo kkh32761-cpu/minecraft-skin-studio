@@ -13,10 +13,11 @@ test('worker serves the built editor and reports missing AI configuration',async
 });
 test('authenticated generation uses Gemini image analysis to return actual UV pixels',async()=>{
   const original=globalThis.fetch;globalThis.fetch=async(url,options)=>{
-    assert.equal(url,'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent');
+    assert.equal(url,'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent');
     assert.equal(options.headers['x-goog-api-key'],sampleKey);
     const body=JSON.parse(options.body);assert.equal(body.contents[0].parts[1].inline_data.mime_type,'image/png');
     assert.equal(body.generationConfig.responseMimeType,'application/json');
+    assert.equal(body.generationConfig.thinkingConfig.thinkingLevel,'low');
     return new Response(JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify(spec)}]}}]}),{status:200});
   };
   try{
@@ -27,14 +28,28 @@ test('authenticated generation uses Gemini image analysis to return actual UV pi
   }finally{globalThis.fetch=original;}
 });
 test('free-tier quota exhaustion is reported without generating pixels or using paid fallback',async()=>{
-  const original=globalThis.fetch;
-  globalThis.fetch=async(url)=>{assert.match(url,/generativelanguage\.googleapis\.com/);return new Response(JSON.stringify({error:{status:'RESOURCE_EXHAUSTED'}}),{status:429});};
+  const original=globalThis.fetch;let attempts=0;
+  globalThis.fetch=async(url)=>{attempts++;assert.match(url,/generativelanguage\.googleapis\.com/);return new Response(JSON.stringify({error:{status:'RESOURCE_EXHAUSTED'}}),{status:429});};
   try{
     const image=Buffer.from([137,80,78,71,13,10,26,10,1,2,3]).toString('base64');
     const request=new Request(base+'/api/ai/generate',{method:'POST',headers:{'oai-authenticated-user-id':'quota-test'},body:JSON.stringify({mime:'image/png',base64:image,model:'default'})});
     const response=await worker.fetch(request,{GEMINI_API_KEY:sampleKey,OPENAI_API_KEY:'unused-paid-key'});
     assert.equal(response.status,429);
     const result=await response.json();assert.match(result.error,/무료 제공량/);assert.equal(result.pixels,undefined);
+    for(let i=0;i<6;i++){
+      const retry=new Request(base+'/api/ai/generate',{method:'POST',headers:{'oai-authenticated-user-id':'quota-test'},body:JSON.stringify({mime:'image/png',base64:image,model:'default'})});
+      assert.equal((await worker.fetch(retry,{GEMINI_API_KEY:sampleKey})).status,429);
+    }
+    assert.equal(attempts,7,'failed provider requests must not consume the local success quota');
+  }finally{globalThis.fetch=original;}
+});
+test('model access errors are distinguished from a successful skin',async()=>{
+  const original=globalThis.fetch;globalThis.fetch=async()=>new Response(JSON.stringify({error:{status:'NOT_FOUND'}}),{status:404});
+  try{
+    const image=Buffer.from([137,80,78,71,13,10,26,10,1,2,3]).toString('base64');
+    const request=new Request(base+'/api/ai/generate',{method:'POST',headers:{'oai-authenticated-user-id':'model-test'},body:JSON.stringify({mime:'image/png',base64:image,model:'default'})});
+    const response=await worker.fetch(request,{GEMINI_API_KEY:sampleKey});assert.equal(response.status,503);
+    const result=await response.json();assert.match(result.error,/모델/);assert.equal(result.pixels,undefined);
   }finally{globalThis.fetch=original;}
 });
 test('owner can supply a temporary new-format auth key without storing it in the Site environment',async()=>{
