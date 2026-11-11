@@ -90,3 +90,40 @@ test('400 structured configuration gets one compatibility retry without switchin
     assert.equal(attempts,2);
   }finally{globalThis.fetch=original;}
 });
+
+test('Gemini 503 is retried twice with the same model before a successful skin',async()=>{
+  const original=globalThis.fetch;let attempts=0;
+  globalThis.fetch=async(url,options)=>{
+    attempts++;
+    assert.equal(url,'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent');
+    assert.equal(options.headers['x-goog-api-key'],sampleKey);
+    if(attempts<3)return new Response(JSON.stringify({error:{status:'UNAVAILABLE'}}),{status:503});
+    return new Response(JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify(spec)}]}}]}),{status:200});
+  };
+  try{
+    const image=Buffer.from([137,80,78,71,13,10,26,10,1,2,3]).toString('base64');
+    const req=new Request(base+'/api/ai/generate',{method:'POST',headers:{'oai-authenticated-user-id':'503-recovery-test'},body:JSON.stringify({mime:'image/png',base64:image,model:'default'})});
+    const response=await worker.fetch(req,{GEMINI_API_KEY:sampleKey});
+    assert.equal(response.status,200);
+    assert.equal((await response.json()).pixels.length,64*64*4);
+    assert.equal(attempts,3);
+  }finally{globalThis.fetch=original;}
+});
+test('persistent Gemini 503 fails clearly after at most three same-model attempts',async()=>{
+  const original=globalThis.fetch;let attempts=0;
+  globalThis.fetch=async(url)=>{
+    attempts++;
+    assert.match(url,/models\/gemini-3\.8-flash:generateContent$/);
+    return new Response(JSON.stringify({error:{status:'UNAVAILABLE'}}),{status:503});
+  };
+  try{
+    const image=Buffer.from([137,80,78,71,13,10,26,10,1,2,3]).toString('base64');
+    const req=new Request(base+'/api/ai/generate',{method:'POST',headers:{'oai-authenticated-user-id':'503-exhausted-test'},body:JSON.stringify({mime:'image/png',base64:image,model:'default'})});
+    const response=await worker.fetch(req,{GEMINI_API_KEY:sampleKey});
+    assert.equal(response.status,503);
+    const result=await response.json();
+    assert.match(result.error,/자동 재시도 2회/);
+    assert.equal(result.pixels,undefined);
+    assert.equal(attempts,3);
+  }finally{globalThis.fetch=original;}
+});
