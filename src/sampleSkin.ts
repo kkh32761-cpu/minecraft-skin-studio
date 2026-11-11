@@ -87,9 +87,9 @@ const headOuter:FaceMap={
 // kangaroo pocket, shoulder lighting, hem; rear hood matching sides.
 const body:FaceMap={
   front:[
-    'lHHHHHHl','HhHHHHhH','HHhRRhHH','HhHRRHhH',
-    'HhHHHHhH','HhHHHHhH','HhHHHHhH','HhiHHihH',
-    'HhiMMihH','HhMMMMhH','HhHHHHhH','iHhhhhHi'
+    'lHHHHHHl','HhHHHHhH','HHiHHiHH','HHiHHiHH',
+    'HhHHHHhH','HhHHHHhH','HhHHHHhH','HhHHHHhH',
+    'HhiHHihH','HhiMMihH','HhHHHHhH','iHhhhhHi'
   ],
   back:[
     'lHHHHHHl','HiHhhHiH','iHHHHHHi','iHHHHHHi',
@@ -111,7 +111,7 @@ const body:FaceMap={
 // The kangaroo pocket is shaded into the base with fine seams.
 const bodyOuter:FaceMap={
   front:[
-    '..h..h..','..i..i..','..R..R..','..R..R..',
+    '..h..h..','..i..i..','........','........',
     '........','........','........','........',
     '........','........','........','........'
   ],
