@@ -1,5 +1,13 @@
 # QA record · 2026-11-11
 
+## Revision 0.4 · hosted key connection
+
+- OpenAI Platform sign-in succeeded. The selected Personal organization / Default project showed $0.00 credit and zero requests. A new project key was saved to ignored `.env.local` and to the private Site's secret runtime setting; no key value entered source or test output.
+- Redeploying the existing Site version applied environment revision 1. The authenticated production `/api/ai/status` returned `ready:true`, `authenticated:true`. This proves key presence only, not provider acceptance or image generation.
+- The UI now labels key connection separately from API credit and asks for a reference image before enabling generation. Provider `insufficient_quota` errors are mapped to an explicit credit message without pixels.
+- `npm run build`, `npm test` (7 frontend + 3 local server cases), and `npm run test:worker` (3 Worker cases, including mocked credit exhaustion) passed. No paid or real provider request was made. User supplied image likeness, face quality, game import and mobile browsers remain unverified.
+- The private Site's per-isolate five-per-hour quota is not a durable cost cap. Before public access or live AI testing, set an explicit project budget/credit limit and implement durable per-user limits.
+
 ## Revision 0.3
 
 - The full 64×64 atlas is visible by default. Clicking the body front in the atlas automatically selected Body and painted the pixel; the selected face remains available as an optional enlarged panel.
@@ -29,7 +37,7 @@
 
 - `skinview3d` WebGL path visually and interactively in this managed browser; browser logged WebGL disabled by sandbox. Code type-checks and uses documented `loadSkin(canvas,{model})` API.
 - Actual Minecraft Java launcher import, mobile touch hardware, Safari/Firefox, transparent RGB roundtrip on arbitrary imported files, high-resolution upload resource behavior beyond checks.
-- Quality and likeness from any input image: automatic AI processing has not been implemented.
+- Quality and likeness from any input image: the structured-analysis-to-template pipeline exists, but no real provider response or image-driven result has been verified.
 
 ## Reproduction
 
