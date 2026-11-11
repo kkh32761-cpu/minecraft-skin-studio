@@ -34,7 +34,7 @@ describe('Java 64×64 UV engine',()=>{
   it('generates opaque base and optional transparent overlay, rejects other dimensions',()=>{
     for(const m of ['default','slim'] as const){const s=sampleSkin(m);expect(s).toHaveLength(16384);
       for(const {rect:r} of regions(m).filter(v=>v.layer==='base'))for(let y=r.y;y<r.y+r.h;y++)for(let x=r.x;x<r.x+r.w;x++)expect(s[pixelIndex(x,y)+3]).toBe(255);
-      expect(s[pixelIndex(42,8)+3]).toBe(255);expect(s[pixelIndex(40,8)+3]).toBe(0);expect(s[pixelIndex(40,39)+3]).toBe(0);
+      expect(s[pixelIndex(42,9)+3]).toBe(255);expect(s[pixelIndex(42,8)+3]).toBe(0);expect(s[pixelIndex(40,39)+3]).toBe(0);
     }
     expect(()=>assertSkinDimensions(64,64)).not.toThrow();expect(()=>assertSkinDimensions(128,128)).toThrow();
   });
@@ -45,23 +45,23 @@ describe('Java 64×64 UV engine',()=>{
       const face=get('head','base','front');
       const hair=get('head','overlay','front');
       const back=get('head','base','back');
-      expect(rgbaHex(skin,face.x,face.y)).toBe('#29242a'); // soft dark hair edge
-      expect(rgbaHex(skin,face.x+3,face.y+3)).toBe('#ffe4cc'); // uniform forehead highlight
-      expect(rgbaHex(skin,face.x+2,face.y+4)).toBe('#272830'); // dark left eye
-      expect(rgbaHex(skin,face.x+2,face.y+5)).toBe('#59443b'); // brown iris under dark upper lid
-      expect(rgbaHex(skin,face.x+5,face.y+5)).toBe('#59443b'); // symmetric second eye row
-      expect(rgbaHex(skin,face.x+1,face.y+6)).toBe('#f5d1b5'); // cheeks stay neutral and clean
-      expect(rgbaHex(skin,face.x+6,face.y+6)).toBe('#f5d1b5'); // symmetric cheeks
-      expect(rgbaHex(skin,face.x+4,face.y+7)).toBe('#bb9180'); // one subtle mouth pixel
-      expect(rgbaHex(skin,face.x+5,face.y+4)).toBe('#272830'); // dark right eye
-      expect(rgbaHex(skin,back.x+3,back.y+3)).toBe('#735342'); // coherent back strands
-      expect(skin[pixelIndex(hair.x+2,hair.y)+3]).toBe(255); // lifted fringe
+      expect(rgbaHex(skin,face.x,face.y)).toBe('#302727'); // smooth chestnut hair
+      expect(rgbaHex(skin,face.x+3,face.y+3)).toBe('#fce0c9'); // clean forehead highlight
+      expect(rgbaHex(skin,face.x+2,face.y+4)).toBe('#302b31'); // natural upper lid
+      expect(rgbaHex(skin,face.x+2,face.y+5)).toBe('#725044'); // warm brown iris
+      expect(rgbaHex(skin,face.x+5,face.y+5)).toBe('#725044'); // symmetric iris
+      expect(rgbaHex(skin,face.x+1,face.y+6)).toBe('#f5d3bc'); // cheeks stay neutral and clean
+      expect(rgbaHex(skin,face.x+6,face.y+6)).toBe('#f5d3bc'); // symmetric cheeks
+      expect(rgbaHex(skin,face.x+4,face.y+6)).toBe('#c38d82'); // subtle mouth above chin
+      expect(rgbaHex(skin,face.x+5,face.y+4)).toBe('#302b31'); // symmetric upper lid
+      expect(rgbaHex(skin,back.x+3,back.y+3)).toBe('#89644c'); // coherent back strands
+      expect(skin[pixelIndex(hair.x+2,hair.y+1)+3]).toBe(255); // lifted fringe
       expect(skin[pixelIndex(hair.x+2,hair.y+4)+3]).toBe(0); // eye visible
       expect(skin[pixelIndex(hair.x+4,hair.y+7)+3]).toBe(0); // no face mask
       const left=get('head','base','left'),right=get('head','base','right');
       const outerLeft=get('head','overlay','left'),outerRight=get('head','overlay','right');
-      expect(rgbaHex(skin,left.x+4,left.y+4)).toBe('#efc4b4'); // subtle left ear
-      expect(rgbaHex(skin,right.x+3,right.y+4)).toBe('#efc4b4'); // mirrored right ear
+      expect(rgbaHex(skin,left.x+4,left.y+4)).toBe('#e7b9ab'); // subtle left ear
+      expect(rgbaHex(skin,right.x+3,right.y+4)).toBe('#e7b9ab'); // mirrored right ear
       expect(skin[pixelIndex(outerLeft.x+4,outerLeft.y+4)+3]).toBe(0); // exposed ear
       expect(skin[pixelIndex(outerRight.x+3,outerRight.y+4)+3]).toBe(0);
       const headOverlays=regions(model).filter(r=>r.part==='head'&&r.layer==='overlay');
@@ -69,8 +69,8 @@ describe('Java 64×64 UV engine',()=>{
       for(const {rect:r} of headOverlays)for(let y=r.y;y<r.y+r.h;y++)for(let x=r.x;x<r.x+r.w;x++){
         total++;if(skin[pixelIndex(x,y)+3]>0)colored++;
       }
-      expect(colored).toBeGreaterThan(60); // actual raised strands
-      expect(colored/total).toBeLessThan(.4); // never the full outer cube
+      expect(colored).toBeGreaterThan(35); // actual raised strands
+      expect(colored/total).toBeLessThan(.25); // sparse, never a full outer cube
     }
   });
   it('adds plain ivory hoodie tailoring, slate jeans and clean white trainers',()=>{
@@ -80,13 +80,21 @@ describe('Java 64×64 UV engine',()=>{
       const chest=get('body','base','front'),hood=get('body','overlay','back');
       const cuff=get('rightArm','base','front'),jeans=get('rightLeg','base','front');
       expect(rgbaHex(skin,chest.x,chest.y)).toBe('#ffffff');
-      expect(rgbaHex(skin,chest.x+3,chest.y+2)).toBe('#9fa9b6'); // hoodie drawstring
-      expect(rgbaHex(skin,chest.x+3,chest.y+6)).toBe('#c0cbd6'); // pouch seam
+      expect(rgbaHex(skin,chest.x+2,chest.y+2)).toBe('#d6dee7'); // subtle hoodie drawstring
+      expect(rgbaHex(skin,chest.x+3,chest.y+9)).toBe('#c0cbd6'); // narrow lower pouch seam
       expect(skin[pixelIndex(hood.x+3,hood.y+1)+3]).toBe(255); // real raised hood
       expect(rgbaHex(skin,cuff.x+1,cuff.y+9)).toBe('#b3c1cf');
       expect(rgbaHex(skin,jeans.x,jeans.y)).toBe('#39465b');
       expect(rgbaHex(skin,jeans.x+1,jeans.y+10)).toBe('#fafcff');
       expect(rgbaHex(skin,jeans.x+1,jeans.y+11)).toBe('#68778b');
+      const jacketOverlay=get('body','overlay','front');
+      expect(skin[pixelIndex(jacketOverlay.x+3,jacketOverlay.y+6)+3]).toBe(0); // no floating square breastplate
+      const top=get('head','base','top'),outerTop=get('head','overlay','top');
+      const center=(y:number,x:number)=>rgbaHex(skin,top.x+x,top.y+y);
+      expect(center(3,3)).toBe('#89644c'); // coherent crown shading
+      let crownRaised=0;
+      for(let y=0;y<8;y++)for(let x=0;x<8;x++)if(skin[pixelIndex(outerTop.x+x,outerTop.y+y)+3]>0)crownRaised++;
+      expect(crownRaised).toBeLessThan(13); // no checkerboard overlay across the scalp
     }
   });
 
