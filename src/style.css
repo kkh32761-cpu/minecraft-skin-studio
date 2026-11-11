@@ -22,6 +22,7 @@
 
 .ai-generate{margin-top:12px;background:#514236;border-color:#b68b5a;color:#f8e6cf;line-height:1.35}
 .ai-generate:disabled{opacity:.62}.ai-description{white-space:pre-line;color:#d4dfe6;font-size:11px;line-height:1.6;border-top:1px solid #42515b;padding-top:10px}
+.ai-key-setup{display:grid;gap:8px;margin-top:14px;padding:11px;border:1px solid #435461;border-radius:7px;background:#19232d}.ai-key-setup label{font-size:11px;font-weight:700;color:#dce8ed}.ai-key-setup input{min-width:0;width:100%;padding:10px;border:1px solid #617588;border-radius:5px;background:#101923;color:#e7eff3;font-size:12px}.ai-key-setup input:focus{outline:2px solid #d7ac78}.ai-key-setup a{font-size:11px;color:#f0c58c}.ai-key-setup .hint{margin:0}
 .color-section{margin:17px 0}.color-title{font-size:12px;font-weight:700;margin-bottom:8px;display:flex;justify-content:space-between;gap:10px}.color-title span{font-weight:400;font-size:10px;color:#9dafbb}
 .advanced-color{border:1px solid #435362;border-radius:8px;background:#1c2935;padding:9px}
 .color-tabs{display:flex;gap:5px}.color-tabs button{flex:1;border:1px solid #4e6170;color:#c7d6de;background:#273646;border-radius:5px;padding:7px;font-size:11px}.color-tabs button.active{border-color:#dbad72;color:#ffe4bb;background:#594735}
