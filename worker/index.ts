@@ -1,46 +1,21 @@
-import {generateCharacter,validateCharacterSpec} from '../src/character';
+import {generateCharacter} from '../src/character';
+import {analyzeGemini,GenerationError} from './gemini';
 import {ASSETS} from './assets.generated';
-type Env={OPENAI_API_KEY?:string;OPENAI_VISION_MODEL?:string};
-class GenerationError extends Error{constructor(message:string,readonly status:number){super(message);}}
+type Env={GEMINI_API_KEY?:string};
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
 const quota=new Map<string,{until:number,count:number}>();
-const colors=['skin','hair','hairShade','eyes','top','topShade','bottom','shoes','accent'];
-const schema={type:'object',additionalProperties:false,required:['imageType','hairStyle','eyeStyle','outfitStyle','colors','visible','inferred'],properties:{
-  imageType:{type:'string',enum:['photo','anime','virtual','game','minecraft_screenshot']},
-  hairStyle:{type:'string',enum:['short','long','fringe','side_swept']},eyeStyle:{type:'string',enum:['soft','sharp','large']},
-  outfitStyle:{type:'string',enum:['plain','jacket','dress','uniform']},
-  colors:{type:'object',additionalProperties:false,required:colors,properties:Object.fromEntries(colors.map(k=>[k,{type:'string',pattern:'^#[0-9A-Fa-f]{6}$'}]))},
-  visible:{type:'object',additionalProperties:false,required:['hair','eyes','clothes','distinctive'],properties:Object.fromEntries(['hair','eyes','clothes','distinctive'].map(k=>[k,{type:'string'}]))},
-  inferred:{type:'object',additionalProperties:false,required:['back','sides'],properties:{back:{type:'string'},sides:{type:'string'}}}
-}};
 function isImage(mime:string,b:Uint8Array){return mime==='image/png'?b.length>8&&[137,80,78,71,13,10,26,10].every((n,i)=>b[i]===n):
   mime==='image/jpeg'?b[0]===255&&b[1]===216&&b[2]===255:
   mime==='image/webp'?String.fromCharCode(...b.slice(0,4))==='RIFF'&&String.fromCharCode(...b.slice(8,12))==='WEBP':false;}
 function decode(base64:string){const binary=atob(base64),bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);return bytes;}
-async function analyze(mime:string,base64:string,key:string,model:string){
-  const res=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},signal:AbortSignal.timeout(45000),body:JSON.stringify({model,store:false,max_output_tokens:1200,
-    input:[{role:'user',content:[{type:'input_text',text:'Analyze the visible character for a Minecraft skin. Preserve visually confirmed hair, eye and outfit colors. Return concise Korean descriptions. Put inferred back/side appearance separately. Color keys must match the visible design; choose harmonious shades. Classify a Minecraft screenshot separately. Do not invent visible traits.'},{type:'input_image',image_url:`data:${mime};base64,${base64}`,detail:'high'}]}],
-    text:{format:{type:'json_schema',name:'skin_character_spec',strict:true,schema}}})});
-  if(!res.ok){
-    const body=await res.json().catch(()=>null) as {error?:{code?:string}}|null;
-    if(res.status===429&&body?.error?.code==='insufficient_quota')throw new GenerationError('OpenAI API 크레딧이 없습니다. 결제 설정 후 다시 시도하세요.',503);
-    if(res.status===401||res.status===403)throw new GenerationError('OpenAI API 키 권한을 확인해야 합니다.',503);
-    if(res.status===429)throw new GenerationError('AI 요청이 일시적으로 제한되었습니다. 잠시 후 다시 시도하세요.',429);
-    throw new GenerationError(`AI 제공자 오류 (${res.status}). 잠시 후 다시 시도하세요.`,502);
-  }
-  const result=await res.json() as {output?:{content?:{type:string;text?:string}[]}[]};
-  const raw=result.output?.flatMap(v=>v.content||[]).find(v=>v.type==='output_text')?.text;
-  if(!raw)throw Error('AI가 캐릭터 분석 내용을 반환하지 않았습니다.');
-  return validateCharacterSpec(JSON.parse(raw));
-}
 export default {async fetch(request:Request,env:Env):Promise<Response>{
   const url=new URL(request.url),path=url.pathname;
-  if(path==='/api/ai/status'&&request.method==='GET')return json({ready:Boolean(env.OPENAI_API_KEY),mode:'character-analysis-to-UV',authenticated:Boolean(request.headers.get('oai-authenticated-user-id'))});
+  if(path==='/api/ai/status'&&request.method==='GET')return json({ready:Boolean(env.GEMINI_API_KEY),provider:'gemini-free',mode:'character-analysis-to-UV',authenticated:Boolean(request.headers.get('oai-authenticated-user-id'))});
   if(path==='/api/ai/generate'&&request.method==='POST'){
     const origin=request.headers.get('origin');if(origin&&origin!==url.origin)return json({error:'다른 사이트에서 생성 요청을 보낼 수 없습니다.'},403);
     const user=request.headers.get('oai-authenticated-user-id');
     if(!user)return json({error:'로그인이 필요합니다.'},401);
-    if(!env.OPENAI_API_KEY)return json({error:'AI 제공자 연결 키가 아직 설정되지 않았습니다.'},503);
+    if(!env.GEMINI_API_KEY)return json({error:'Gemini 무료 API 키가 아직 연결되지 않았습니다.'},503);
     const now=Date.now(),entry=quota.get(user)||{until:now+3600000,count:0};if(now>entry.until){entry.until=now+3600000;entry.count=0;}
     if(entry.count>=5)return json({error:'AI 생성은 한 시간에 5회까지 가능합니다.'},429);
     if(Number(request.headers.get('content-length')||0)>2.8*1024*1024)return json({error:'이미지 크기는 최대 2MB입니다.'},413);
@@ -50,7 +25,7 @@ export default {async fetch(request:Request,env:Env):Promise<Response>{
       if(!['default','slim'].includes(payload.model)||typeof payload.base64!=='string'||payload.base64.length>2.8*1024*1024||!/^[-A-Za-z0-9+/]*={0,2}$/.test(payload.base64))throw new GenerationError('이미지 데이터가 올바르지 않습니다.',400);
       const bytes=decode(payload.base64);if(bytes.length>2*1024*1024||!isImage(payload.mime,bytes))throw new GenerationError('PNG, JPG, WebP 이미지(최대 2MB)만 지원합니다.',400);
       entry.count++;quota.set(user,entry);
-      const spec=await analyze(payload.mime,payload.base64,env.OPENAI_API_KEY,env.OPENAI_VISION_MODEL||'gpt-4.1-mini');
+      const spec=await analyzeGemini(payload.mime,payload.base64,env.GEMINI_API_KEY);
       return json({spec,pixels:Array.from(generateCharacter(spec,payload.model as 'default'|'slim'))});
     }catch(error){return json({error:error instanceof Error?error.message:'AI 생성에 실패했습니다.'},error instanceof GenerationError?error.status:error instanceof SyntaxError?400:502);}
   }
