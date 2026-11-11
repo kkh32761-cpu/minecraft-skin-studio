@@ -6,8 +6,8 @@ import type {Region} from './skin';
 export const samplePalette:Record<string,string>={
   // Chestnut hair: warm highlights, deliberate strand clusters, dark edges.
   A:'#29242A',B:'#40302F',C:'#634638',D:'#87624C',E:'#B38A6E',F:'#735342',
-  // Clear complexion: peach skin with understated shading and no blotchy noise.
-  s:'#F5D1B5',t:'#FFE4CC',u:'#E6B69C',v:'#C9957C',w:'#E6AEA5',x:'#AA7772',
+  // Natural, uniform complexion. Face uses only forehead highlights, one subtle chin shadow and no cheek noise.
+  s:'#F5D1B5',t:'#FFE4CC',u:'#E8BDA2',v:'#C9957C',w:'#EFC4B4',x:'#BB9180',
   // Small, clean familiar Minecraft-style eyes.
   I:'#272830',J:'#59443B',K:'#A98971',
   // Relaxed ivory hoodie: cool white core, purposeful folds and raised layers.
@@ -23,24 +23,24 @@ const rgba=Object.fromEntries(Object.entries(samplePalette).map(([symbol,hex])=>
 ])) as Record<string,number[]>;
 type FaceMap=Partial<Record<Region['face'],string[]>>;
 
-// A readable 8x8 face: two dark expressive eyes, two warm irises, minimal
-// blush and an understated mouth. Tousled bangs frame but never hide eyes.
+// A clean 8x8 face: compact symmetrical eyes (one pixel each), clear forehead,
+// uninterrupted skin clusters and a single restrained mouth pixel. No stripe-like eyes.
 const head:FaceMap={
   front:[
-    'ABCCCDDA','ACDFEDCA','BCssstCB','BCsstsCB',
-    'BsIssIsB','BsJssJsB','BwsssswB','BussxsuB'
+    'ABCCCDDA','ACDFEDCA','BDttttDB','usttttsu',
+    'usIssIsu','ussssssu','ussssssu','usssxssu'
   ],
   back:[
     'ABCDEDCB','BCDFFDCB','BCDDFCCB','BCCFDCCB',
     'BCDFCDCB','BCCFDCCB','BFCDFCCB','ABCCBBAB'
   ],
   left:[
-    'ABCCDDCB','BCDFEDCB','BCDFCDCB','BCtusCCB',
-    'BstsusCB','BstssuCB','BCusvvCB','ABCCBCAB'
+    'ABCCDDCB','BCDFEDCB','BCDFFDCB','BCsstsCB',
+    'BCsustCB','BCsssuCB','BCsssuCB','ABCCBCAB'
   ],
   right:[
-    'BCDDCCBA','BCDEFDCA','BCDCFDCB','BCCsutCB',
-    'BCsustsB','BCussttB','BCvvusCB','BACBCCBA'
+    'BCDDCCBA','BCDEFDCA','BCDFFDCB','BCstssCB',
+    'BCtsusCB','BCusssCB','BCusssCB','BACBCCBA'
   ],
   top:[
     'AABCCCBA','BCDFEDCB','CDFFEDCC','CCDFDDCC',
@@ -55,8 +55,8 @@ const head:FaceMap={
 // giant bows, or high-contrast face-obscuring masks.
 const headOuter:FaceMap={
   front:[
-    'ABCCCDDA','BCDFEDCB','BCF..DCB','BF....CB',
-    'B......B','C......C','........','........'
+    'ABCCCDDA','BCDFEDCB','ACD..DCA','B......B',
+    '........','........','........','........'
   ],
   back:[
     'ABCCCDDA','BCDFEDCB','BC....CB','BF....CB',
