@@ -63,9 +63,6 @@ export default function App(){
   function undo(){if(!history.current.length)return;future.current.push(new Uint8ClampedArray(current.current));const v=history.current.pop()!;current.current=v;setData(v);setRevision(n=>n+1);setUndoCount(history.current.length);setRedoCount(future.current.length);}
   function redo(){if(!future.current.length)return;history.current.push(new Uint8ClampedArray(current.current));const v=future.current.pop()!;current.current=v;setData(v);setRevision(n=>n+1);setUndoCount(history.current.length);setRedoCount(future.current.length);}
   useEffect(()=>{const saved=readSaved();if(saved){
-    // Preserve edited work; an untouched prior example becomes the new guide start.
-    const untouched=sampleSkin(saved.model);
-    if(saved.data.every((value,index)=>value===untouched[index]))return;
     current.current=saved.data;setData(saved.data);setModel(saved.model);setStatus('브라우저에 저장된 이전 작업을 복원했습니다.');
   }},[]);
   useEffect(()=>{const id=window.setTimeout(()=>{try{localStorage.setItem(CACHE,JSON.stringify({rgba:btoa(String.fromCharCode(...data)),model}));}catch{setStatus('브라우저 저장 공간이 부족합니다. PNG를 다운로드해 보관하세요.');}},500);return()=>clearTimeout(id)},[data,model]);
