@@ -6,7 +6,7 @@ const palette:Record<string,string>={
   // Cool, desaturated ice-blue hair; a silver hood; coherent warm skin.
   H:'#77b2cf',h:'#357ea9',j:'#c2e0ed',K:'#2a6289',
   a:'#efcebf',b:'#ffe2d2',d:'#c59f93',p:'#e7b0ae',m:'#a1787c',
-  E:'#264568',e:'#4083bc',w:'#a1d2e6',W:'#edf4f4',
+  E:'#263f5b',e:'#4083bc',w:'#a1d2e6',W:'#edf4f4',
   S:'#e5e1e8',s:'#bcb7c3',D:'#8d8998',F:'#666675',
   L:'#91b7cd',l:'#d4e7ee',R:'#568eae',r:'#a7d5e2',T:'#8ca2b4',G:'#c94e52',
   Q:'#918d99',q:'#696774',P:'#e5dce2',O:'#aab0bb',o:'#e6e5e8',X:'#60616c'
