@@ -1,177 +1,184 @@
 import type {Region} from './skin';
 
-// A hand-painted 64x64 Java skin inspired by the supplied front/back reference.
-// Crucial features: soft silver headpiece, layered powder-blue hair, oversized
-// two-tone eyes, lavender-white coat, red badge, cyan ribbon, puffy sleeves,
-// muted skirt, bare thighs and white knee-high boots. UV pixels are the output,
-// not a picture pasted over the 3D viewer.
+// Classic casual showcase: an original, familiar Minecraft brown-hair/hoodie
+// avatar, not a copied third-party skin. Pixel clusters are hand-authored for
+// both front and back. All dimensions use Java Edition's real 64x64 UV regions.
 export const samplePalette:Record<string,string>={
-  // Hair: reference blue, with real highlight/strand shadows instead of flat cyan.
-  H:'#78C2EC',h:'#439ED9',j:'#A8D8F5',K:'#267DBA',k:'#285884',I:'#93CDEB',n:'#D4EFFF',
-  // Headband/hood: ivory-pink base, mauve shading, blue translucent detail.
-  S:'#F2EDF2',s:'#E4DDE7',D:'#C5BCCB',F:'#98919E',f:'#706978',P:'#A6C8E5',O:'#78ACD3',
-  // Skin and eyes: peach warmth, rosy cheeks, dark lashes and blue irises.
-  a:'#F3D3C3',b:'#FFE5D7',d:'#CFA694',p:'#E8A0AD',m:'#966D76',i:'#F1E9DC',y:'#DFCFBF',
-  E:'#29354C',e:'#2E639B',v:'#91C9E8',w:'#E4F1FB',W:'#FFFFFF',
-  // Coat: pearl-lavender light/shadow range with charcoal-mauve cuff accents.
-  C:'#E9E3EC',c:'#D4C9D7',q:'#B8ADBC',r:'#9A8F9F',t:'#7B7082',u:'#564F61',
-  // Tie, scarf and brooch.
-  B:'#7BC5E6',g:'#4D90C6',z:'#B4DBEA',G:'#EA352E',T:'#7777CF',
-  // Skirt, boots and socks: muted warm mauves with calibrated dark folds.
-  V:'#B2A4B4',X:'#978999',x:'#746879',Y:'#CDC0CC',
-  L:'#E7E1E7',l:'#BEB3C1',M:'#958A99',N:'#6E6575'
+  // Chestnut hair: warm highlights, deliberate strand clusters, dark edges.
+  A:'#29242A',B:'#40302F',C:'#634638',D:'#87624C',E:'#B38A6E',F:'#735342',
+  // Clear complexion: peach skin with understated shading and no blotchy noise.
+  s:'#F5D1B5',t:'#FFE4CC',u:'#E6B69C',v:'#C9957C',w:'#E6AEA5',x:'#AA7772',
+  // Small, clean familiar Minecraft-style eyes.
+  I:'#272830',J:'#59443B',K:'#A98971',
+  // Relaxed ivory hoodie: cool white core, purposeful folds and raised layers.
+  H:'#F7F7F5',h:'#E8ECF0',i:'#D6DEE7',j:'#BBC6D3',k:'#9EABBE',l:'#FFFFFF',
+  R:'#9FA9B6',M:'#C0CBD6',N:'#B3C1CF',
+  // Dark slate-blue everyday trousers, coherent seams and hems.
+  P:'#2B3546',Q:'#39465B',U:'#53617B',V:'#202A3A',W:'#65738B',
+  // Bright white trainers, neutral soles and small clean shadow bands.
+  Z:'#FAFCFF',z:'#DFE6EE',n:'#B6C3D0',o:'#68778B'
 };
 const rgba=Object.fromEntries(Object.entries(samplePalette).map(([symbol,hex])=>[
   symbol,[parseInt(hex.slice(1,3),16),parseInt(hex.slice(3,5),16),parseInt(hex.slice(5,7),16),255]
 ])) as Record<string,number[]>;
 type FaceMap=Partial<Record<Region['face'],string[]>>;
 
-// Full atlas base: emphasize clusters in the original character's silhouette.
+// A readable 8x8 face: two dark expressive eyes, two warm irises, minimal
+// blush and an understated mouth. Tousled bangs frame but never hide eyes.
 const head:FaceMap={
   front:[
-    'HjIIIjHH','hIhhhhIH','hHbbaHHh','HEEaaEEH',
-    'HweaaewH','HveaaevH','HpbaabpH','HaabmaaH'
+    'ABCCCDDA','ACDFEDCA','BCssstCB','BCsstsCB',
+    'BsIssIsB','BsJssJsB','BwsssswB','BussxsuB'
   ],
   back:[
-    'jjHHjjII','IIhIhIIh','hIHhIIHh','hIHhIIHh',
-    'hHHhjIHh','hHHhjIHh','hIIhHHHh','KhhHhKKH'
+    'ABCDEDCB','BCDFFDCB','BCDDFCCB','BCCFDCCB',
+    'BCDFCDCB','BCCFDCCB','BFCDFCCB','ABCCBBAB'
   ],
   left:[
-    'hIhHHHHH','hIhIIIHH','hhHhhHHH','hhaaaahH',
-    'hhaadbhH','hhadddHH','hHadddHH','KKhHhKKH'
+    'ABCCDDCB','BCDFEDCB','BCDFCDCB','BCtusCCB',
+    'BstsusCB','BstssuCB','BCusvvCB','ABCCBCAB'
   ],
   right:[
-    'HHHHhIhH','HHIIIhIh','HHHhhHhh','Hhaaaahh',
-    'HhbdaahH','HHdddaah','HHdddaHh','HKKHhHKK'
+    'BCDDCCBA','BCDEFDCA','BCDCFDCB','BCCsutCB',
+    'BCsustsB','BCussttB','BCvvusCB','BACBCCBA'
   ],
   top:[
-    'kKHHHHKk','KjHIIHjK','HIIjjIIH','HIIhhIIH',
-    'HIHhhIHH','HIIHHIIH','KjHIIHjK','kKHHHHKk'
+    'AABCCCBA','BCDFEDCB','CDFFEDCC','CCDFDDCC',
+    'BCFDEDCB','BCCDFCCB','ABCCDCBA','AABCCBAA'
   ],
   bottom:[
-    'dddddddd','daaaaaad','daaaaaad','daaaaaad',
-    'daaaaaad','daaaaaad','daaaaaad','dddddddd'
+    'vvvvvvvv','vssssssv','vssssssv','vssssssv',
+    'vssssssv','vssssssv','vssssssv','vvvvvvvv'
   ]
 };
-// Silver goggle/hood brim sits one real Minecraft outer layer outward.
-// Fringes do not obscure the eyes, with two hanging outer columns.
+// Thin, sculpted second-layer hair. No accessories, goggles, anime horns,
+// giant bows, or high-contrast face-obscuring masks.
 const headOuter:FaceMap={
   front:[
-    'DSsSSsSD','SPPOOPPS','hIhjjIhh','K......K',
-    'h......h','H......H','h......h','I......I'
+    'ABCCCDDA','BCDFEDCB','BCF..DCB','BF....CB',
+    'B......B','C......C','........','........'
   ],
   back:[
-    'SSsSSsSS','SPPOOPPS','Ih....hI','I......I',
-    'I.h..h.I','j.h..h.j','h.H..H.h','H.H..H.H'
+    'ABCCCDDA','BCDFEDCB','BC....CB','BF....CB',
+    'BC....CB','C.....CB','........','........'
   ],
   left:[
-    'SsSSsSSD','SOOOPPSD','hIh...hH','Hh....hH',
-    'Ih....hh','Hh....hH','jH....hH','hH....KH'
+    'ABCCDDCB','BCDFEDCB','BC....CB','BF....CB',
+    'BC....CB','C.....CB','........','........'
   ],
   right:[
-    'DSSsSSsS','DSPPOOOS','Hh...hIh','Hh....hH',
-    'hh....hI','Hh....hH','Hh....Hj','HK....Hh'
+    'BCDDCCBA','BCDEFDCA','BC....CB','BF....CB',
+    'BC....CB','C.....CB','........','........'
   ],
   top:[
-    'DSSSSSSD','SPPOOPPS','SS....SS','sS....Ss',
-    'sS....Ss','SS....SS','SPPOOPPS','DSSSSSSD'
+    'AABCCCBA','BCDFEDCB','CDFFEDCC','CCDFDDCC',
+    'BCFDEDCB','BCCDFCCB','ABCCDCBA','AABCCBAA'
   ]
 };
-// Coat under-paint: inner cyan ribbon, crimson pin, cool ivory body and
-// mauve shadow seams. 8x12 front/back; 4x12 sides.
+
+// Plain but tailored: clean ivory hoodie, two neat drawstrings, subtle
+// kangaroo pocket, shoulder lighting, hem; rear hood matching sides.
 const body:FaceMap={
   front:[
-    'SCCSSCCS','CCzBBzCC','CczBgzCC','GCcgBzCC',
-    'GCCgTzCC','CCcBgcCC','CCcBgcCC','CCcBgcCC',
-    'qCcBgcCq','ttttrttt','VYVVYVYV','XVXVXXVX'
+    'lHHHHHHl','HhHHHHhH','HHiRRiHH','HHiRRiHH',
+    'HhhiihhH','HhHHHHhH','HhMMMMhH','HhiHHihH',
+    'HhiHHihH','HhMMMMhH','iHhhhhHi','jiHHHHij'
   ],
   back:[
-    'SSCCCCSS','SCccCcCS','CccqqccC','CqcrrcqC',
-    'CCcccccC','CccCCccC','CccCCccC','CccCCccC',
-    'qCccCCcq','rqqqqqqr','YVVXXVVY','XVXVXXVX'
+    'lHHHHHHl','HiHhhHiH','iHHHHHHi','iHHHHHHi',
+    'HhHHHHhH','HhHHHHhH','HhHHHHhH','HhHHHHhH',
+    'HhHHHHhH','iHhhhhHi','jiHHHHij','jiiHHiij'
   ],
   left:[
-    'SCCS','sCcC','cqqC','CCcC','CccC','CcCC',
-    'CcCC','CqCC','qrCC','tqrr','YVVV','XVXX'
+    'lHHi','HHhi','hhHi','iHHi','HHHi','HhhH',
+    'HhHi','HHHi','iHHi','HHhi','jiij','jjij'
   ],
   right:[
-    'SCCS','CCcs','Cqqc','CcCC','CccC','CCcC',
-    'CCcC','CCqC','CCrq','rrqt','VVVY','XXVX'
+    'iHHl','iHHH','iHhh','iHHH','iHHH','HhhH',
+    'iHhH','iHHH','iHHi','ihHH','jiij','jijj'
   ],
-  top:['SSCCCCSS','SCCCCCCS','SCccccCS','SCCCCCCS'],
-  bottom:['XVVVVVVX','XVXXXXVX','XVVVVVVX','XXXXXXXX']
+  top:['lHHHHHHl','HHHHHHHH','hHHHHHHh','iHHHHHHi'],
+  bottom:['jiiHHiij','jiii ii j'.replace(/ /g,''),'jiiHHiij','jjjjjjjj']
 };
-// Raised jacket: clear two side panels, sculpted lapels, a blue tie/ribbon,
-// folded bottom hem. Empty center remains open to show colored base.
+// Outer layers make the collar and hood perceptibly three-dimensional but
+// keep the front center open so the pocket and drawstrings remain visible.
 const bodyOuter:FaceMap={
   front:[
-    'SC....CS','SCC..CCS','SC....CS','Cc....cC',
-    'SC....CS','Sc....cS','Cc....cC','SC....CS',
-    'Sc....cS','rC....Cr','YV....VY','XX....XX'
+    'ih....hi','ii....ii','..R..R..','..R..R..',
+    '........','........','.M....M.','.M....M.',
+    '.M....M.','.MMMMMM.','........','j......j'
   ],
   back:[
-    'SC....CS','SC....CS','Cq....qC','CC....CC',
-    'SC....CS','SC....CS','Cc....cC','SC....CS',
-    'SC....CS','rC....Cr','YV....VY','XX....XX'
+    '.hHHHHi.','.iHHHHi.','.jiHHij.','..jiij..',
+    '........','........','........','........',
+    '........','........','........','........'
   ],
   left:[
-    'S..S','SC.C','C..C','C..C','S..S','C..C',
-    'C..C','C..C','C..C','r..r','Y..Y','X..X'
+    'ih.i','i..i','j..i','....','....','....',
+    '....','....','....','....','....','j..j'
   ],
   right:[
-    'S..S','C.CS','C..C','C..C','S..S','C..C',
-    'C..C','C..C','C..C','r..r','Y..Y','X..X'
+    'i.hi','i..i','i..j','....','....','....',
+    '....','....','....','....','....','j..j'
   ]
 };
 const legFront=[
-  'YVVY','XVVX','xYYx','baab','abbb','aabb',
-  'diiy','yiid','LLlL','LqlL','LlLL','NMMN'
+  'QPPQ','PQPP','PPQP','QPQQ','QPQQ','QPUQ',
+  'QPPQ','PQPP','VVVV','ZzzZ','ZZZZ','noon'
 ];
 const legBack=[
-  'YVVY','XVXX','xYYx','daaa','daaa','daya',
-  'dyii','yiid','LLLL','LlLL','LllL','NMMN'
+  'QPPQ','PPQQ','PQPP','PPQP','QPQQ','QQPP',
+  'QPQQ','PPQP','VVVV','ZzzZ','ZZZZ','noon'
 ];
 const legLeft=[
-  'YVVY','XVXX','xyYx','daaa','daaa','diiy',
-  'yiid','diiy','LlLL','LlLL','LlLL','NNMN'
+  'QPPQ','PPQP','QPPQ','QPPQ','QPUQ','QPQQ',
+  'QPPQ','QPPQ','VVVV','ZzzZ','ZZZZ','noon'
 ];
 const legRight=[
-  'YVVY','XXVX','xYyx','aaad','aaad','yiid',
-  'diiy','yiid','LLlL','LLlL','LLlL','NMNN'
+  'QPPQ','QPQQ','QPQQ','QPPQ','QQPQ','QPUQ',
+  'QPPQ','QPPQ','VVVV','ZzzZ','ZZZZ','noon'
 ];
 const legOuter=[
-  'Y..Y','X..X','x..x','....','....','....',
-  '....','....','L..L','l..l','L..L','NNNN'
+  'Q..Q','....','....','....','....','U...',
+  '....','....','V..V','Z..Z','z..z','oooo'
 ];
-// Sleeves have real horizontal shoulder stripes and dark, wide wrist cuffs;
-// the old sample repeated a checkerboard across limbs.
-function sleevePattern(width:number,face:Region['face'],outer:boolean):string[]{
-  const front=face==='front',back=face==='back';
-  if(face==='top')return ['S'.repeat(width),'C'.repeat(width),'c'.repeat(width),'C'.repeat(width)];
-  if(face==='bottom')return ['d'.repeat(width),'a'.repeat(width),'d'.repeat(width),'d'.repeat(width)];
+
+// Face-aware arm patterns: classic arms are 4px wide, slim front/back are 3px.
+// The top and bottom surfaces are physical UV rectangles, not painted overlays.
+function armPattern(width:number,face:Region['face'],outer:boolean):string[]{
+  if(face==='top')return outer
+    ?['....','....','....','....']
+    :['l'.repeat(width),'H'.repeat(width),'h'.repeat(width),'H'.repeat(width)];
+  if(face==='bottom')return outer?['....','....','....','....']:
+    ['u'.repeat(width),'s'.repeat(width),'v'.repeat(width),'v'.repeat(width)];
   if(outer){
-    const patterns=front||back?[
-      'SC.C','SC.C','....','....','S..C','C..C',
-      'S..C','C..C','rttt','tuut','....','....'
+    const rows=face==='front'||face==='back'?[
+      'i..i','....','....','j...','....','...i',
+      '....','....','j..j','NNNN','....','....'
     ]:[
-      'S..C','SC.C','....','....','S..C','C..C',
-      'S..C','C..C','rttt','tuut','....','....'
+      'i..i','....','....','...j','....','i...',
+      '....','....','j..j','NNNN','....','....'
     ];
-    return patterns.map(row=>row.slice(0,width));
+    return rows.map(row=>width===3?row.slice(0,3):row);
   }
-  const patterns=front?[
-    'SSCC','sSCC','tqrr','tqrr','CCcC','SCCS',
-    'CCcC','CCcC','qrrq','tuut','daaa','dbaa'
-  ]:back?[
-    'CCSS','CCSs','rrqt','rrqt','CcCC','SCCS',
-    'CCcC','CCcC','qrrq','tuut','aaad','aabd'
+  const rows=face==='front'?[
+    'lHHl','Hhhh','HhHH','iHHH','HhHH','HhhH',
+    'HhHH','iHHH','jHHj','jNNj','stts','ussu'
+  ]:face==='back'?[
+    'lHHl','Hhhh','HHhH','HHHi','HhHH','HhhH',
+    'HHhH','HHHi','jHHj','jNNj','stts','ussu'
+  ]:face==='left'?[
+    'lHHi','HhHi','HhHi','iHHi','HhHi','HhhH',
+    'HhHi','iHHi','jHHj','jNNj','stts','ussu'
   ]:[
-    'SCCS','sCCs','tqqt','tqqt','cCCc','SCCS',
-    'CcCC','CcCC','qrrq','ttut','daaa','dbaa'
+    'iHHl','iHhH','iHhH','iHHi','iHhH','HhhH',
+    'iHhH','iHHi','jHHj','jNNj','stts','ussu'
   ];
-  return patterns.map(row=>row.slice(0,width));
+  return rows.map(row=>width===3?row.slice(0,3):row);
 }
-function solid(width:number,height:number,symbol:string):string[]{return Array.from({length:height},()=>symbol.repeat(width));}
+function solid(width:number,height:number,symbol:string):string[]{
+  return Array.from({length:height},()=>symbol.repeat(width));
+}
 export function makeSampleSkin(atlas:Region[]):Uint8ClampedArray{
   const out=new Uint8ClampedArray(64*64*4);
   for(const region of atlas){
@@ -185,8 +192,8 @@ export function makeSampleSkin(atlas:Region[]):Uint8ClampedArray{
       ?(face==='front'||face==='back'?legOuter:undefined)
       :face==='front'?legFront:face==='back'?legBack:
         face==='left'?legLeft:face==='right'?legRight:
-        solid(rect.w,rect.h,face==='top'?'V':'N');
-    else if(arm)pattern=sleevePattern(rect.w,face,layer==='overlay');
+        solid(rect.w,rect.h,face==='top'?'P':'o');
+    else if(arm)pattern=armPattern(rect.w,face,layer==='overlay');
     if(!pattern)continue;
     if(pattern.length!==rect.h||pattern.some(row=>row.length!==rect.w))
       throw Error('Sample UV art dimensions: '+part+'/'+layer+'/'+face+' expected '+rect.w+'x'+rect.h);
