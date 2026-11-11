@@ -66,3 +66,27 @@ test('owner can supply a temporary new-format auth key without storing it in the
     const unauthenticated=await worker.fetch(new Request(base+'/api/ai/generate',{method:'POST',body:JSON.stringify(payload)}),{});assert.equal(unauthenticated.status,401);
   }finally{globalThis.fetch=original;}
 });
+
+test('400 structured configuration gets one compatibility retry without switching model',async()=>{
+  const original=globalThis.fetch;let attempts=0;
+  globalThis.fetch=async(url,options)=>{
+    attempts++;
+    assert.equal(url,'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent');
+    const body=JSON.parse(options.body);
+    if(attempts===1){
+      assert.ok(body.generationConfig.responseSchema);
+      return new Response(JSON.stringify({error:{status:'INVALID_ARGUMENT',message:'Unknown name "additionalProperties"'}}),{status:400});
+    }
+    assert.equal(body.generationConfig.responseSchema,undefined);
+    assert.equal(body.generationConfig.thinkingConfig,undefined);
+    return new Response(JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify(spec)}]}}]}),{status:200});
+  };
+  try{
+    const image=Buffer.from([137,80,78,71,13,10,26,10,1,2,3]).toString('base64');
+    const req=new Request(base+'/api/ai/generate',{method:'POST',headers:{'oai-authenticated-user-id':'compatibility-test'},body:JSON.stringify({mime:'image/png',base64:image,model:'default'})});
+    const response=await worker.fetch(req,{GEMINI_API_KEY:sampleKey});
+    assert.equal(response.status,200);
+    assert.equal((await response.json()).pixels.length,64*64*4);
+    assert.equal(attempts,2);
+  }finally{globalThis.fetch=original;}
+});
