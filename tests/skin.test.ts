@@ -38,33 +38,38 @@ describe('Java 64×64 UV engine',()=>{
     }
     expect(()=>assertSkinDimensions(64,64)).not.toThrow();expect(()=>assertSkinDimensions(128,128)).toThrow();
   });
-  it('recreates identifiable front and rear reference features on both arm models',()=>{
+  it('keeps a polished familiar face, natural complexion and subtle raised hair for both arm models',()=>{
     for(const model of ['default','slim'] as const){
       const skin=sampleSkin(model);
       const get=(part:string,layer:string,face:string)=>regions(model).find(r=>r.part===part&&r.layer===layer&&r.face===face)!.rect;
-      const head=get('head','base','front'),back=get('head','base','back');
-      const jacket=get('body','base','front'),rearJacket=get('body','base','back');
-      const sleeve=get('rightArm','base','front');
-      const boot=get('rightLeg','base','front');
-      expect(rgbaHex(skin,head.x,head.y)).toBe('#78c2ec'); // layered powder blue
-      expect(rgbaHex(skin,back.x,back.y)).toBe('#a8d8f5'); // rear hair highlights
-      expect(rgbaHex(skin,jacket.x,jacket.y)).toBe('#f2edf2'); // silver-pearl coat
-      expect(rgbaHex(skin,jacket.x,jacket.y+3)).toBe('#ea352e'); // red badge
-      expect(rgbaHex(skin,jacket.x+3,jacket.y+6)).toBe('#7bc5e6'); // blue ribbon
-      expect(rgbaHex(skin,rearJacket.x+3,rearJacket.y+3)).toBe('#9a8f9f');
-      expect(rgbaHex(skin,sleeve.x,sleeve.y+2)).toBe('#7b7082'); // sleeve band
-      expect(rgbaHex(skin,boot.x,boot.y+8)).toBe('#e7e1e7'); // ivory boot
+      const face=get('head','base','front');
+      const hair=get('head','overlay','front');
+      const back=get('head','base','back');
+      expect(rgbaHex(skin,face.x,face.y)).toBe('#29242a'); // soft dark hair edge
+      expect(rgbaHex(skin,face.x+3,face.y+3)).toBe('#f5d1b5'); // clean skin
+      expect(rgbaHex(skin,face.x+2,face.y+4)).toBe('#272830'); // dark left eye
+      expect(rgbaHex(skin,face.x+5,face.y+4)).toBe('#272830'); // dark right eye
+      expect(rgbaHex(skin,face.x+2,face.y+5)).toBe('#59443b'); // warm iris
+      expect(rgbaHex(skin,back.x+3,back.y+3)).toBe('#735342'); // coherent back strands
+      expect(skin[pixelIndex(hair.x+2,hair.y)+3]).toBe(255); // lifted fringe
+      expect(skin[pixelIndex(hair.x+2,hair.y+4)+3]).toBe(0); // eye visible
+      expect(skin[pixelIndex(hair.x+4,hair.y+7)+3]).toBe(0); // no face mask
     }
   });
-  it('keeps the example eyes readable beneath the raised goggles in both arm models',()=>{
+  it('adds plain ivory hoodie tailoring, slate jeans and clean white trainers',()=>{
     for(const model of ['default','slim'] as const){
       const skin=sampleSkin(model);
-      const head=regions(model).find(v=>v.part==='head'&&v.layer==='base'&&v.face==='front')!.rect;
-      const goggles=regions(model).find(v=>v.part==='head'&&v.layer==='overlay'&&v.face==='front')!.rect;
-      expect(rgbaHex(skin,head.x+2,head.y+4)).toBe('#2e639b');
-      expect(rgbaHex(skin,head.x+5,head.y+4)).toBe('#2e639b');
-      expect(skin[pixelIndex(goggles.x+2,goggles.y+4)+3]).toBe(0);
-      expect(skin[pixelIndex(goggles.x+1,goggles.y)+3]).toBe(255);
+      const get=(part:string,layer:string,face:string)=>regions(model).find(r=>r.part===part&&r.layer===layer&&r.face===face)!.rect;
+      const chest=get('body','base','front'),hood=get('body','overlay','back');
+      const cuff=get('rightArm','base','front'),jeans=get('rightLeg','base','front');
+      expect(rgbaHex(skin,chest.x,chest.y)).toBe('#ffffff');
+      expect(rgbaHex(skin,chest.x+3,chest.y+2)).toBe('#9fa9b6'); // hoodie drawstring
+      expect(rgbaHex(skin,chest.x+3,chest.y+6)).toBe('#c0cbd6'); // pouch seam
+      expect(skin[pixelIndex(hood.x+3,hood.y+1)+3]).toBe(255); // real raised hood
+      expect(rgbaHex(skin,cuff.x+1,cuff.y+9)).toBe('#b3c1cf');
+      expect(rgbaHex(skin,jeans.x,jeans.y)).toBe('#39465b');
+      expect(rgbaHex(skin,jeans.x+1,jeans.y+10)).toBe('#fafcff');
+      expect(rgbaHex(skin,jeans.x+1,jeans.y+11)).toBe('#68778b');
     }
   });
 });
