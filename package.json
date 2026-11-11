@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build && node scripts/build-worker.mjs",
-    "test": "vitest run && node --test server/checks.mjs",
+    "test": "vitest run && node --test server/checks.mjs && node scripts/check-sample-png.mjs",
     "test:worker": "node --test server/worker-checks.mjs",
     "server": "node server/index.mjs"
   },
