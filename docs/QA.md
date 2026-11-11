@@ -2,10 +2,10 @@
 
 ## Revision 0.5 · free provider route
 
-- The deployed Worker source now requires `GEMINI_API_KEY` and calls the fixed Gemini 2.5 Flash image-understanding model. It never reads `OPENAI_API_KEY`, and quota exhaustion returns an error without a paid fallback. The OpenAI secret was removed from the Site's runtime settings.
+- The Worker accepts a hosted `GEMINI_API_KEY` secret or a temporary owner-supplied key sent directly to the authenticated Worker. It calls the fixed Gemini 2.5 Flash image-understanding model, never reads `OPENAI_API_KEY`, and reports quota exhaustion without a paid fallback. The OpenAI secret was removed from the Site's runtime settings.
 - The request sends resized image bytes and a structured character schema; response values are locally validated before the deterministic UV assembler receives them. The UI states that free-tier images may be used to improve Google products.
-- `npm run build`, `npm test` (7 frontend + 3 older loopback cases), and `npm run test:worker` (3 Worker cases, including mocked Gemini success and free-tier quota exhaustion) passed. These are mock-provider results; **no real Gemini key, request, generated likeness or game import has been verified**.
-- Google AI Studio onboarding requires the account owner to confirm age/developer status and accept its terms. The free-tier key and live API test remain pending. A free project has variable quotas; the five-per-hour Worker map is per isolate and is not a durable public-service limit.
+- `npm run build`, `npm test` (7 frontend + 3 older loopback cases), and `npm run test:worker` (4 Worker cases, including mocked Gemini success, temporary-key authentication and free-tier quota exhaustion) passed. These are mock-provider results; **no real Gemini key, request, generated likeness or game import has been verified**.
+- Google AI Studio onboarding was completed and its Default Gemini Project displayed **무료 등급**. Creating a key in the cloud browser failed with Google's “The request is suspicious” error; no key was produced. The owner can create a key in their own browser and paste it into the site's temporary, password-masked input without posting it in chat. The input holds the key in page memory only and loses it on reload. The live API test remains pending. A free project has variable quotas; the five-per-hour Worker map is per isolate and is not a durable public-service limit.
 
 ## Revision 0.4 · hosted key connection
 
