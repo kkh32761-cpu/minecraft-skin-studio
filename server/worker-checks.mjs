@@ -20,3 +20,14 @@ test('authenticated generation uses provider response to return actual UV pixels
     const result=await response.json();assert.equal(result.pixels.length,64*64*4);assert.equal(result.spec.colors.eyes,'#ba252d');
   }finally{globalThis.fetch=original;}
 });
+test('provider credit exhaustion is reported without claiming a generated skin',async()=>{
+  const original=globalThis.fetch;
+  globalThis.fetch=async()=>new Response(JSON.stringify({error:{code:'insufficient_quota'}}),{status:429});
+  try{
+    const image=Buffer.from([137,80,78,71,13,10,26,10,1,2,3]).toString('base64');
+    const request=new Request(base+'/api/ai/generate',{method:'POST',headers:{'oai-authenticated-user-id':'credit-test'},body:JSON.stringify({mime:'image/png',base64:image,model:'default'})});
+    const response=await worker.fetch(request,{OPENAI_API_KEY:'test-key'});
+    assert.equal(response.status,503);
+    const result=await response.json();assert.match(result.error,/크레딧/);assert.equal(result.pixels,undefined);
+  }finally{globalThis.fetch=original;}
+});
