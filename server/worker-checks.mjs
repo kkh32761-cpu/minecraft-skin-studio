@@ -127,3 +127,58 @@ test('persistent Gemini 503 fails clearly after at most three same-model attempt
     assert.equal(attempts,3);
   }finally{globalThis.fetch=original;}
 });
+
+test('stream emits actual Gemini retry attempts and a complete UV skin',async()=>{
+  const original=globalThis.fetch;let calls=0;
+  globalThis.fetch=async()=>{
+    calls++;
+    if(calls===1)return new Response(JSON.stringify({error:{status:'UNAVAILABLE'}}),{status:503});
+    return new Response(JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify(spec)}]}}]}),{status:200});
+  };
+  try{
+    const image=Buffer.from([137,80,78,71,13,10,26,10,1,2,3]).toString('base64');
+    const response=await worker.fetch(new Request(base+'/api/ai/generate',{method:'POST',
+      headers:{'oai-authenticated-user-id':'streaming-retry-user','Accept':'application/x-ndjson'},
+      body:JSON.stringify({mime:'image/png',base64:image,model:'slim'})}),{GEMINI_API_KEY:sampleKey});
+    assert.equal(response.status,200);
+    assert.match(response.headers.get('Content-Type'),/application\/x-ndjson/);
+    const events=(await response.text()).trim().split('\n').map(x=>JSON.parse(x));
+    assert.ok(events.some(e=>e.type==='progress'&&e.stage==='analyzing'&&e.attempt===1));
+    assert.ok(events.some(e=>e.type==='progress'&&e.stage==='retrying'&&e.attempt===2&&e.reason==='unavailable'));
+    assert.ok(events.some(e=>e.type==='progress'&&e.stage==='assembling'));
+    assert.equal(events.at(-1).type,'complete');
+    assert.equal(events.at(-1).pixels.length,64*64*4);
+    assert.equal(calls,2);
+  }finally{globalThis.fetch=original;}
+});
+test('network timeouts retry twice and return a clear 504 rather than generic abort',async()=>{
+  const original=globalThis.fetch;let calls=0;
+  globalThis.fetch=async()=>{
+    calls++;throw new DOMException('The operation was aborted due to timeout.','TimeoutError');
+  };
+  try{
+    const image=Buffer.from([137,80,78,71,13,10,26,10,1,2,3]).toString('base64');
+    const response=await worker.fetch(new Request(base+'/api/ai/generate',{method:'POST',
+      headers:{'oai-authenticated-user-id':'timeout-retry-user'},
+      body:JSON.stringify({mime:'image/png',base64:image,model:'default'})}),{GEMINI_API_KEY:sampleKey});
+    assert.equal(response.status,504);
+    const payload=await response.json();
+    assert.match(payload.error,/응답 시간이 초과/);
+    assert.equal(payload.pixels,undefined);
+    assert.equal(calls,3);
+  }finally{globalThis.fetch=original;}
+});
+test('streamed Gemini failure is an explicit error event without false completion',async()=>{
+  const original=globalThis.fetch;
+  globalThis.fetch=async()=>new Response(JSON.stringify({error:{status:'RESOURCE_EXHAUSTED'}}),{status:429});
+  try{
+    const image=Buffer.from([137,80,78,71,13,10,26,10,1,2,3]).toString('base64');
+    const response=await worker.fetch(new Request(base+'/api/ai/generate',{method:'POST',
+      headers:{'oai-authenticated-user-id':'streamed-quota-user','Accept':'application/x-ndjson'},
+      body:JSON.stringify({mime:'image/png',base64:image,model:'default'})}),{GEMINI_API_KEY:sampleKey});
+    const events=(await response.text()).trim().split('\n').map(x=>JSON.parse(x));
+    assert.equal(events.at(-1).type,'error');
+    assert.equal(events.at(-1).status,429);
+    assert.ok(!events.some(e=>e.type==='complete'));
+  }finally{globalThis.fetch=original;}
+});
