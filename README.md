@@ -1,6 +1,6 @@
 # Minecraft Skin Studio
 
-A browser-local Minecraft Java Edition 64×64 RGBA skin editor with an optional Gemini free-tier image-analysis pipeline. The private hosted Worker needs a `GEMINI_API_KEY` from an unbilled Google AI Studio project before live generation is available. Real-image likeness has not been tested.
+A browser-local Minecraft Java Edition 64×64 RGBA skin editor with an optional Gemini free-tier image-analysis pipeline. The private hosted Worker accepts a `GEMINI_API_KEY` server secret or a temporary key supplied by the signed-in owner for one browser session. Real-image likeness has not been tested.
 
 ## Run
 
@@ -12,7 +12,7 @@ npm run build
 npm run test:worker
 ```
 
-The editor needs no API key. `npm run build` bundles a Cloudflare Worker at `dist/server/index.js` for Sites. It serves the app and provides `/api/ai/status` and `/api/ai/generate`. The Site remains private; the API requires authenticated user identity. Set `GEMINI_API_KEY` as a hosted secret for an **unbilled free-tier** Google AI Studio project. The deployed Worker does not read `OPENAI_API_KEY` and has no paid-provider fallback. Without the Gemini key, generation is disabled and the endpoint returns 503. A successful status response proves key presence, not a successful image analysis or skin likeness.
+The editor needs no API key. `npm run build` bundles a Cloudflare Worker at `dist/server/index.js` for Sites. It serves the app and provides `/api/ai/status` and `/api/ai/generate`. The Site remains private; the API requires authenticated user identity. Prefer `GEMINI_API_KEY` as a hosted secret for an **unbilled free-tier** Google AI Studio project. Until then, the owner can paste a key into the site input. It stays in React memory only, is sent to the authenticated Worker for an explicit generation request, and is lost on reload. It is never embedded in the app bundle, saved by the browser, or returned in responses. The deployed Worker does not read `OPENAI_API_KEY` and has no paid-provider fallback. `/api/ai/status` reports only server-secret presence; a temporary key is verified by an actual generation request.
 
 ## Implemented
 
