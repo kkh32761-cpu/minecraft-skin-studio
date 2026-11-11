@@ -1,6 +1,6 @@
 # Minecraft Skin Studio
 
-A browser-local Minecraft Java Edition 64×64 RGBA skin editor with an optional key-gated AI pipeline. The private hosted Worker has a server-side provider key, but the connected API account currently shows $0.00 credit. Real-image generation and likeness have not been tested.
+A browser-local Minecraft Java Edition 64×64 RGBA skin editor with an optional Gemini free-tier image-analysis pipeline. The private hosted Worker needs a `GEMINI_API_KEY` from an unbilled Google AI Studio project before live generation is available. Real-image likeness has not been tested.
 
 ## Run
 
@@ -12,13 +12,13 @@ npm run build
 npm run test:worker
 ```
 
-The editor needs no API key. `npm run build` bundles a Cloudflare Worker at `dist/server/index.js` for Sites. It serves the app and provides `/api/ai/status` and `/api/ai/generate`. The Site remains private; the API requires authenticated user identity. `OPENAI_API_KEY` is configured as a hosted server secret and in an ignored local `.env.local`. Without it, generation is disabled and the endpoint returns 503. A successful status response only proves configuration, not a funded account or successful generation.
+The editor needs no API key. `npm run build` bundles a Cloudflare Worker at `dist/server/index.js` for Sites. It serves the app and provides `/api/ai/status` and `/api/ai/generate`. The Site remains private; the API requires authenticated user identity. Set `GEMINI_API_KEY` as a hosted secret for an **unbilled free-tier** Google AI Studio project. The deployed Worker does not read `OPENAI_API_KEY` and has no paid-provider fallback. Without the Gemini key, generation is disabled and the endpoint returns 503. A successful status response proves key presence, not a successful image analysis or skin likeness.
 
 ## Implemented
 
 - Strict 64×64 PNG import (PNG signature and dimensions) and RGBA PNG export
 - Explicit Classic/Steve (4 px) and Slim/Alex (3 px) UV rectangles, 6 faces × 6 parts × 2 layers
-- Body part and layer selection; integer-pixel pen, eraser, eyedropper, face-confined flood fill, 16-color palette, zoom, grid, and region reset
+- Body part and layer selection; integer-pixel pen, eraser, eyedropper, face-confined flood fill, color picker, zoom, grid, and region reset
 - Enlarged selected-face editor, expandable full UV atlas, draggable desktop divider, color wheel, saturation/value square, RGBA/HSVA channels, 8-digit HEX and overlay alpha
 - 40-step stroke undo/redo, browser-local autosave and restore
 - `skinview3d` rendering from the **same 64×64 canvas data used for export** when WebGL is available
@@ -29,7 +29,7 @@ The initial project opens with a plain guide skin. The example character is avai
 
 ## AI generation status
 
-The private Worker can send a compressed reference image to the OpenAI Responses API for structured hair, eyes, clothing, color roles and inferred back/sides. It validates the response and assembles an actual 64×64 RGBA UV texture through a deterministic template. These pixels enter the same preview, undo and PNG export flow. The endpoint checks image signature and size, authenticated identity, a five-per-hour per-isolate limit and a 45-second timeout. **The hosted key is configured, but $0.00 credit means actual provider calls and likeness have not been verified.** The assembler has limited hair/outfit templates and does not provide face candidates or preservation locks. Its per-isolate in-memory quota is insufficient for unrestricted public AI access.
+The private Worker can send a compressed reference image to Gemini 2.5 Flash for structured hair, eyes, clothing, color roles and inferred back/sides. It validates the response and assembles an actual 64×64 RGBA UV texture through a deterministic template. These pixels enter the same preview, undo and PNG export flow. The endpoint checks image signature and size, authenticated identity, a five-per-hour per-isolate limit and a 45-second timeout. Free-tier quota exhaustion stops with an error; it never switches to a paid model. **A live Gemini key and real-image likeness tests remain outstanding.** The assembler has limited hair/outfit templates and does not provide face candidates or preservation locks. Its per-isolate in-memory quota is insufficient for unrestricted public AI access. Google may use free-tier inputs and outputs to improve its products; do not upload sensitive images.
 
 ## Older loopback-only analysis adapter
 
@@ -37,16 +37,16 @@ The private Worker can send a compressed reference image to the OpenAI Responses
 
 ## Known scope and limitations
 
-- The generation pipeline is tested with a mocked provider response only. Actual AI generation requires API credit and real-image tests. Face candidates, semantic masks and AI region locks are not implemented.
+- The generation pipeline is tested with a mocked Gemini response only. Actual AI generation requires an unbilled free-tier key and real-image tests. Face candidates, semantic masks and AI region locks are not implemented.
 - Symmetry painting is not implemented. UV atlas-wide x reflection is incorrect for paired limbs; implement face-aware correspondence before enabling it.
 - The software Canvas renderer is a fallback with orthographic projection; the canonical WebGL path uses `skinview3d`. Actual game import and real WebGL rendering were not verified in the managed test browser, which disabled WebGL.
 - Browsers can normalize hidden RGB underneath fully transparent pixels when importing a PNG through Canvas. Visible RGBA pixels survive tested import/export; transparent RGB byte fidelity and PNG metadata/compression bytes are not guaranteed.
 - LocalStorage is per browser/device and can be cleared by the user or browser. Download PNG for lasting backups.
-- No server upload occurs; the reference image stays in this browser session and is not retained by autosave.
+- A reference image stays in the browser until the user requests AI generation. That request sends a resized image to the private Worker and Gemini; the Worker does not persist it. Reference images are not retained by autosave.
 
 ## Design and next stages
 
-See [architecture and roadmap](docs/ARCHITECTURE.md), [QA evidence](docs/QA.md), and [dependency review](docs/REFERENCES.md). Next: set an explicit API budget and add credit, evaluate real images and face quality, add locked pixel masks and independent face candidates, then harden durable quotas before public AI access.
+See [architecture and roadmap](docs/ARCHITECTURE.md), [QA evidence](docs/QA.md), and [dependency review](docs/REFERENCES.md). Next: connect a free-tier key, evaluate real images and face quality, add locked pixel masks and independent face candidates, then harden durable quotas before public AI access.
 
 ## License
 
