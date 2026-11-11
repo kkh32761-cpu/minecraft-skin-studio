@@ -3,12 +3,13 @@ import type {Region} from './skin';
 // Original hand-painted blue-haired explorer, inspired by the user's quality reference.
 // The goggles, fringe, coat, cuffs and boots use Minecraft's real outer UV layer.
 const palette:Record<string,string>={
-  H:'#69b8dc',h:'#438db9',j:'#a5daf2',K:'#2b739e',
-  a:'#eec9b6',b:'#ffe0c9',d:'#cda28f',p:'#e8a6a5',m:'#916b73',
-  E:'#263f5b',e:'#388dc5',w:'#9fd8ed',W:'#f6f6f1',
-  S:'#f0eef0',s:'#c6c3cc',D:'#8d8d9a',F:'#5b6073',
-  L:'#87bddb',l:'#d0eef7',R:'#428fc1',r:'#8bcbe8',T:'#8fa5b6',G:'#d84b43',
-  Q:'#888590',q:'#64616f',P:'#e1dce0',O:'#a7aab2',o:'#e8e9e8',X:'#535864'
+  // Cool, desaturated ice-blue hair; a silver hood; coherent warm skin.
+  H:'#77b2cf',h:'#357ea9',j:'#c2e0ed',K:'#2a6289',
+  a:'#efcebf',b:'#ffe2d2',d:'#c59f93',p:'#e7b0ae',m:'#a1787c',
+  E:'#263f5b',e:'#4083bc',w:'#a1d2e6',W:'#edf4f4',
+  S:'#e5e1e8',s:'#bcb7c3',D:'#8d8998',F:'#666675',
+  L:'#91b7cd',l:'#d4e7ee',R:'#568eae',r:'#a7d5e2',T:'#8ca2b4',G:'#c94e52',
+  Q:'#918d99',q:'#696774',P:'#e5dce2',O:'#aab0bb',o:'#e6e5e8',X:'#60616c'
 };
 const rgba=Object.fromEntries(Object.entries(palette).map(([symbol,hex])=>[symbol,[...hex.match(/\w\w/g)!.map(n=>parseInt(n,16)),255]])) as Record<string,number[]>;
 type FaceMap=Partial<Record<Region['face'],string[]>>;
@@ -37,15 +38,15 @@ const head:FaceMap={
 };
 const headOuter:FaceMap={
   front:[
-    'FLLFFLLF','HjHHjHjH','HH....HH','H......H',
+    'sSSssSSs','SSSLlSSS','Hj....jH','H......H',
     'h......h','H......H','h......h','........'
   ],
   back:[
-    'FFFFFFFF','F......F','H......H','H......H',
+    'sSSSSSSs','SS....SS','H......H','H......H',
     'H......H','H......H','H......H','HH....HH'
   ],
   left:[
-    'FFFFFFFF','F......F','F......F','H......H',
+    'sSSSSSSs','SS....SS','S......S','H......H',
     'H......H','H......H','H......H','HH....HH'
   ],
   right:[
@@ -53,8 +54,8 @@ const headOuter:FaceMap={
     'H......H','H......H','H......H','HH....HH'
   ],
   top:[
-    'FLLLLLLF','FllllllF','F......F','F......F',
-    'F......F','F......F','F......F','FFFFFFFF'
+    'sSSSSSSs','SSllllSS','SL....LS','SL....LS',
+    'S......S','S......S','S......S','sSSSSSSs'
   ]
 };
 const body:FaceMap={

@@ -37,25 +37,44 @@ const requestBody=(mime:string,base64:string,strict:boolean)=>({
 });
 function requestGemini(mime:string,base64:string,key:string,strict:boolean){
   return fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent',{
-    method:'POST',headers:{'x-goog-api-key':key,'Content-Type':'application/json'},signal:AbortSignal.timeout(45000),
+    method:'POST',headers:{'x-goog-api-key':key,'Content-Type':'application/json'},signal:AbortSignal.timeout(20000),
     body:JSON.stringify(requestBody(mime,base64,strict))
   });
 }
 const TRANSIENT_STATUSES=new Set([500,502,503,504]);
-const MAX_TRANSIENT_RETRIES=2; // Three attempts total, never switch models or providers.
+const MAX_TRANSIENT_RETRIES=2; // Three attempts total; no automatic paid fallback.
+export type GeminiProgress=(stage:'analyzing'|'retrying',attempt:number,reason?:'unavailable'|'timeout'|'network'|'compatibility')=>void;
 const pause=(ms:number)=>new Promise<void>(resolve=>setTimeout(resolve,ms));
+const backoff=(attempt:number)=>Math.min(4000,700*2**attempt+Math.floor(Math.random()*200));
 
-async function requestWithBackoff(mime:string,base64:string,key:string,strict:boolean){
-  let response:Response|undefined;
+async function requestWithBackoff(mime:string,base64:string,key:string,strict:boolean,notify?:GeminiProgress){
+  notify?.('analyzing',1);
   for(let attempt=0;attempt<=MAX_TRANSIENT_RETRIES;attempt++){
-    response=await requestGemini(mime,base64,key,strict);
-    if(!TRANSIENT_STATUSES.has(response.status)||attempt===MAX_TRANSIENT_RETRIES)break;
-    // The same request may count against the owner's API request quota.
-    // Retry only a small bounded number of times with exponential backoff + jitter.
-    const delay=Math.min(5000,900*2**attempt+Math.floor(Math.random()*350));
-    await pause(delay);
+    let response:Response;
+    try{
+      response=await requestGemini(mime,base64,key,strict);
+    }catch(error){
+      // Timeouts and temporary network errors previously escaped this loop,
+      // leaving users with a generic aborted-operation failure.
+      const name=error instanceof Error?error.name:'';
+      if(!['TimeoutError','AbortError','TypeError'].includes(name))throw error;
+      const reason=name==='TypeError'?'network':'timeout';
+      if(attempt===MAX_TRANSIENT_RETRIES)throw new GenerationError(
+        reason==='timeout'
+          ?'Gemini 응답 시간이 초과되었습니다. 자동 재시도 2회도 완료되지 않았습니다. 원본 이미지는 유지됩니다.'
+          :'Gemini 연결이 불안정합니다. 자동 재시도 2회에도 응답받지 못했습니다. 원본 이미지는 유지됩니다.',504);
+      notify?.('retrying',attempt+2,reason);
+      await pause(backoff(attempt));
+      continue;
+    }
+    if(!TRANSIENT_STATUSES.has(response.status)||attempt===MAX_TRANSIENT_RETRIES)return response;
+    // Retryable HTTP 5xx. Each retry may count toward the user's quota.
+    notify?.('retrying',attempt+2,'unavailable');
+    const retryAfter=Number(response.headers.get('retry-after'));
+    await pause(Number.isFinite(retryAfter)&&retryAfter>0
+      ?Math.min(4000,retryAfter*1000):backoff(attempt));
   }
-  return response!;
+  throw new GenerationError('Gemini 분석 응답을 받지 못했습니다.',504);
 }
 function describe400(message:string|undefined){
   const unsupported=message?.match(/Unknown name ["']([^"']+)["']/i);
@@ -65,12 +84,12 @@ function describe400(message:string|undefined){
 }
 
 // A paid model or fallback provider must never be selected without user consent.
-export async function analyzeGemini(mime:string,base64:string,key:string){
-  let response=await requestWithBackoff(mime,base64,key,true);
+export async function analyzeGemini(mime:string,base64:string,key:string,notify?:GeminiProgress){
+  let response=await requestWithBackoff(mime,base64,key,true,notify);
   // A compatibility retry uses the same model and JSON output, but omits
   // responseSchema/thinkingConfig when Google rejects the structured request.
   // HTTP 400 is rejected before inference, so this does not retry a successful call.
-  if(response.status===400)response=await requestWithBackoff(mime,base64,key,false);
+  if(response.status===400){notify?.('retrying',1,'compatibility');response=await requestWithBackoff(mime,base64,key,false,notify);}
   if(!response.ok){
     const failure=await response.json().catch(()=>null) as ProviderFailure|null;
     const code=failure?.error?.status;

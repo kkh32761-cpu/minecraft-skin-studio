@@ -33,7 +33,9 @@ export default function App(){
   const [aiChecked,setAIChecked]=useState(false);
   const [aiBusy,setAIBusy]=useState(false);
   const [aiError,setAIError]=useState('');
-  const [aiPhase,setAIPhase]=useState<'preparing'|'waiting'|'assembling'>('preparing');
+  const [aiPhase,setAIPhase]=useState<'preparing'|'analyzing'|'retrying'|'assembling'>('preparing');
+  const [aiAttempt,setAIAttempt]=useState(1);
+  const [aiRetryReason,setAIRetryReason]=useState('');
   const [aiElapsed,setAIElapsed]=useState(0);
   const [aiDescription,setAIDescription]=useState('');
   const [grid,setGrid]=useState(true);
@@ -154,16 +156,65 @@ export default function App(){
     }catch(e){setStatus(e instanceof Error?e.message:'이미지를 읽지 못했습니다.');}
     if(refInput.current)refInput.current.value='';
   }
-  async function generateAI(){if(!reference||!(aiReady||aiKey)||!aiAuthenticated||aiBusy)return;setAIBusy(true);setAIError('');setAIElapsed(0);setAIPhase('preparing');setStatus('이미지 특징을 분석해 실제 UV 픽셀로 조립 중입니다…');
-    try{const [metadata,base64]=reference.split(',');if(!base64||base64.length>2.8*1024*1024)throw Error('참고 이미지가 너무 큽니다. 더 작은 이미지를 사용하세요.');
-      setAIPhase('waiting');
-      const response=await fetch('/api/ai/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mime:metadata.match(/^data:(.*?);/)?.[1],base64,model,...(aiReady?{}:{apiKey:aiKey.trim()})})});
-      const result=await response.json();if(!response.ok)throw Error(result.error||`AI 오류 (${response.status})`);
-      setAIPhase('assembling');
-      if(!Array.isArray(result.pixels)||result.pixels.length!==64*64*4||result.pixels.some((v:unknown)=>!Number.isInteger(v)||Number(v)<0||Number(v)>255))throw Error('생성된 스킨 픽셀 데이터가 올바르지 않습니다.');
-      commit(new Uint8ClampedArray(result.pixels));setAIDescription(`확인된 특징: ${result.spec.visible.hair} · ${result.spec.visible.eyes} · ${result.spec.visible.clothes}\n추론한 부분: ${result.spec.inferred.back}`);
-      setStatus('AI 분석을 바탕으로 64×64 스킨을 조립했습니다. 얼굴과 옷의 원본 유사도를 직접 확인하고 수정하세요.');
-    }catch(e){const message=e instanceof Error?e.message:'AI 생성에 실패했습니다.';setAIError(message);setStatus(message);}finally{setAIBusy(false)}
+  async function generateAI(){
+    if(!reference||!(aiReady||aiKey)||!aiAuthenticated||aiBusy)return;
+    setAIBusy(true);setAIError('');setAIElapsed(0);setAIPhase('preparing');setAIAttempt(1);setAIRetryReason('');
+    setStatus('원본 이미지를 유지하면서 Gemini 분석을 시작합니다.');
+    try{
+      const [metadata,base64]=reference.split(',');
+      if(!base64||base64.length>2.8*1024*1024)throw Error('참고 이미지가 너무 큽니다. 더 작은 이미지를 사용하세요.');
+      const response=await fetch('/api/ai/generate',{
+        method:'POST',headers:{'Content-Type':'application/json','Accept':'application/x-ndjson'},
+        body:JSON.stringify({mime:metadata.match(/^data:(.*?);/)?.[1],base64,model,...(aiReady?{}:{apiKey:aiKey.trim()})})
+      });
+      type GenerationResult={pixels:number[];spec:{visible:{hair:string;eyes:string;clothes:string};inferred:{back:string}}};
+      let result:GenerationResult|undefined;
+      if(response.headers.get('content-type')?.includes('application/x-ndjson')){
+        if(!response.body)throw Error('AI 서버의 진행 응답을 읽을 수 없습니다.');
+        const reader=response.body.getReader(),decoder=new TextDecoder();
+        let buffer='',complete=false;
+        function consume(line:string){
+          if(!line.trim())return;
+          let event:Record<string,unknown>;
+          try{event=JSON.parse(line) as Record<string,unknown>;}catch{throw Error('AI 서버 진행 응답 형식이 올바르지 않습니다.');}
+          if(event.type==='progress'){
+            const stage=event.stage;
+            if(stage==='preparing'||stage==='analyzing'||stage==='retrying'||stage==='assembling')setAIPhase(stage);
+            if(typeof event.attempt==='number')setAIAttempt(event.attempt);
+            if(stage==='retrying'){
+              const reason=event.reason;
+              setAIRetryReason(reason==='timeout'?'응답 시간 초과':reason==='network'?'일시적인 네트워크 오류':reason==='compatibility'?'요청 형식 호환 조정':'Gemini 서버 혼잡');
+            }
+          }else if(event.type==='error')throw Error(typeof event.error==='string'?event.error:'AI 생성에 실패했습니다.');
+          else if(event.type==='complete'){
+            result=event as unknown as GenerationResult;complete=true;
+          }
+        }
+        try{
+          while(true){
+            const {value,done}=await reader.read();if(done)break;
+            buffer+=decoder.decode(value,{stream:true});
+            let nl;
+            while((nl=buffer.indexOf('\n'))>=0){const line=buffer.slice(0,nl);buffer=buffer.slice(nl+1);consume(line);}
+          }
+          buffer+=decoder.decode();if(buffer.trim())consume(buffer);
+        }finally{reader.releaseLock();}
+        if(!complete)throw Error('AI 서버 연결이 완료 전에 종료되었습니다. 원본 이미지는 유지됩니다.');
+      }else{
+        // Gracefully support a deployment still running the older JSON Worker.
+        const payload=await response.json();
+        if(!response.ok)throw Error(payload.error||`AI 오류 (${response.status})`);
+        result=payload as GenerationResult;
+      }
+      if(!result||!Array.isArray(result.pixels)||result.pixels.length!==64*64*4||
+         result.pixels.some(v=>!Number.isInteger(v)||v<0||v>255))throw Error('생성된 스킨 픽셀 데이터가 올바르지 않습니다.');
+      commit(new Uint8ClampedArray(result.pixels));
+      setAIDescription(`확인된 특징: ${result.spec.visible.hair} · ${result.spec.visible.eyes} · ${result.spec.visible.clothes}\n추론한 부분: ${result.spec.inferred.back}`);
+      setStatus('AI 분석 결과를 64×64 스킨에 반영했습니다. 원본 유사도를 확인하고 필요하면 수정하세요.');
+    }catch(e){
+      const message=e instanceof Error?e.message:'AI 생성에 실패했습니다.';
+      setAIError(message);setStatus(message);
+    }finally{setAIBusy(false);}
   }
   function download(){const c=canvasFromData(data);c.toBlob(blob=>{if(!blob){setStatus('PNG 생성에 실패했습니다.');return;}const a=document.createElement('a');const url=URL.createObjectURL(blob);a.href=url;a.download=`minecraft-skin-${model==='slim'?'alex':'steve'}.png`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setStatus('64×64 PNG를 다운로드했습니다. 게임 업로드 시 같은 팔 모델을 선택하세요.');},'image/png');}
   const selected=hover?`${parts.find(p=>p.id===hover.part)?.label} · ${labels[hover.face]} · ${hover.rect.x},${hover.rect.y}`:'도면에서 원하는 면을 클릭하면 자동으로 선택됩니다';
@@ -179,7 +230,7 @@ export default function App(){
         <div className="panel"><div className="panel-label">원본 이미지 <span className="badge">AI / 수동 비교</span></div><input ref={refInput} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={e=>importReference(e.target.files?.[0])}/>{reference?<div className="reference"><img src={reference} alt="업로드한 참고 이미지"/><button onClick={()=>refInput.current?.click()}>이미지 교체</button><button onClick={()=>{setReference(null);setAIDescription('')}}>제거</button></div>:<button className="reference-empty" onClick={()=>refInput.current?.click()}>+ 사진 · 일러스트 추가</button>}
           {!aiReady&&aiChecked&&<div className="ai-key-setup"><label htmlFor="gemini-key">내 Gemini 무료 API 키</label><input id="gemini-key" type="password" value={aiKey} onChange={e=>setAIKey(e.target.value)} autoComplete="off" spellCheck={false} placeholder="Google AI Studio에서 만든 키 붙여넣기"/><div className="ai-key-actions"><a href="https://aistudio.google.com/api-keys" target="_blank" rel="noopener noreferrer">Google AI Studio에서 무료 키 만들기 ↗</a><button type="button" onClick={()=>{setAIKey('');clearLegacyGeminiKey();setStatus('현재 입력한 Gemini 키를 지웠습니다.')}} disabled={!aiKey}>입력한 키 지우기</button></div><p className="hint">키는 브라우저에 저장되지 않으며 새로고침하면 사라집니다. 생성할 때만 로그인된 AI 서버로 전송합니다.</p></div>}
           <button className="wide-button ai-generate" disabled={!reference||!aiConfigured||!aiAuthenticated||aiBusy} onClick={generateAI}>{aiBusy?'분석 · UV 제작 중…':'✦ 이미지로 AI 스킨 생성'}</button>
-          {aiBusy&&<div className="ai-progress" role="status" aria-live="polite"><strong>{aiPhase==='preparing'?'이미지 검사 중':aiPhase==='waiting'?'Gemini 이미지 분석 응답 대기 중':'64×64 픽셀 조립 · 미리보기 반영 중'}</strong><span>{aiElapsed}초 경과</span><div className="ai-progress-track"><div className={aiPhase==='waiting'?'waiting':''}/></div><small>{aiPhase==='waiting'?'AI 서버는 정확한 완료율을 제공하지 않습니다. 일시적 서버 과부하(503)는 최대 2회 자동 재시도합니다.':'실제 완료된 단계만 표시합니다.'}</small></div>}
+          {aiBusy&&<div className="ai-progress" role="status" aria-live="polite"><strong>{aiPhase==='preparing'?'업로드 이미지 검사 중':aiPhase==='analyzing'?'Gemini 이미지 특징 분석 중':aiPhase==='retrying'?`${aiRetryReason} · ${aiAttempt}번째 시도 중`:'분석 결과를 64×64 스킨으로 조립 중'}</strong><span>{aiElapsed}초 경과</span><div className="ai-progress-track"><div className={(aiPhase==='analyzing'||aiPhase==='retrying')?'waiting':''}/></div><small>{aiPhase==='retrying'?'요청을 재전송하고 있습니다. 원본 이미지와 기존 스킨은 그대로 유지됩니다.':aiPhase==='analyzing'?'서버의 실제 진행 이벤트를 표시합니다. 완료율은 제공되지 않습니다.':'서버에서 수신한 단계만 표시합니다.'}</small></div>}
           {aiError&&<p className="ai-error" role="alert">생성 실패: {aiError}</p>}
           <p className="hint">{!aiChecked?'무료 AI 서버 연결을 확인 중입니다…':!aiAuthenticated?'사이트 로그인이 필요합니다.':aiConfigured?(reference?'사진을 Gemini 무료 API로 전송해 분석합니다. 무료 제공량 제한이 있으며 Google 제품 개선에 사용될 수 있습니다.':'먼저 참고 이미지를 추가하세요.'):'무료 키를 입력하면 실제 이미지 분석을 시작할 수 있습니다. 직접 편집은 계속 이용할 수 있습니다.'}</p>{aiDescription&&<p className="ai-description">{aiDescription}</p>}
         </div>

@@ -29,7 +29,7 @@ The initial project opens with a plain guide skin. The example character is avai
 
 ## AI generation status
 
-The private Worker can send a compressed reference image to Gemini 2.5 Flash for structured hair, eyes, clothing, color roles and inferred back/sides. It validates the response and assembles an actual 64×64 RGBA UV texture through a deterministic template. These pixels enter the same preview, undo and PNG export flow. The endpoint checks image signature and size, authenticated identity, a five-per-hour per-isolate limit and a 45-second timeout. Free-tier quota exhaustion stops with an error; it never switches to a paid model. **A live Gemini key and real-image likeness tests remain outstanding.** The assembler has limited hair/outfit templates and does not provide face candidates or preservation locks. Its per-isolate in-memory quota is insufficient for unrestricted public AI access. Google may use free-tier inputs and outputs to improve its products; do not upload sensitive images.
+The private Worker can send a compressed reference image to Gemini 3.8 Flash for structured hair, eyes, clothing, color roles and inferred back/sides. It validates the response and assembles an actual 64×64 RGBA UV texture through a deterministic template. These pixels enter the same preview, undo and PNG export flow. The endpoint checks image signature and size, authenticated identity, a five-per-hour per-isolate limit and per-attempt 20-second timeouts. Temporary HTTP 5xx, network and timeout failures are retried up to twice; streamed NDJSON progress is supported while the older JSON endpoint remains compatible. Free-tier quota exhaustion stops with an error; it never switches to a paid model. **A live Gemini key and real-image likeness tests remain outstanding.** The assembler has limited hair/outfit templates (with improved coherent shading and overlays) and does not provide face candidates or preservation locks. Its per-isolate in-memory quota is insufficient for unrestricted public AI access. Google may use free-tier inputs and outputs to improve its products; do not upload sensitive images.
 
 ## Older loopback-only analysis adapter
 
@@ -46,7 +46,7 @@ The private Worker can send a compressed reference image to Gemini 2.5 Flash for
 
 ## Design and next stages
 
-See [architecture and roadmap](docs/ARCHITECTURE.md), [QA evidence](docs/QA.md), and [dependency review](docs/REFERENCES.md). Next: connect a free-tier key, evaluate real images and face quality, add locked pixel masks and independent face candidates, then harden durable quotas before public AI access.
+See [architecture and roadmap](docs/ARCHITECTURE.md), [AI engine audit](docs/ENGINE_AUDIT.md), [QA evidence](docs/QA.md), and [dependency review](docs/REFERENCES.md). Next: connect a free-tier key, evaluate real images and face quality, add locked pixel masks and independent face candidates, then harden durable quotas before public AI access.
 
 ## License
 
