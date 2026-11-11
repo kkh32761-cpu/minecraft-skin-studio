@@ -5,11 +5,11 @@ import type {Region} from './skin';
 // both front and back. All dimensions use Java Edition's real 64x64 UV regions.
 export const samplePalette:Record<string,string>={
   // Chestnut hair: warm highlights, deliberate strand clusters, dark edges.
-  A:'#29242A',B:'#40302F',C:'#634638',D:'#87624C',E:'#B38A6E',F:'#735342',
+  A:'#302727',B:'#493631',C:'#684B3C',D:'#89644C',E:'#A78064',F:'#69493B',
   // Natural, uniform complexion. Face uses only forehead highlights, one subtle chin shadow and no cheek noise.
-  s:'#F5D1B5',t:'#FFE4CC',u:'#E8BDA2',v:'#C9957C',w:'#EFC4B4',x:'#BB9180',
+  s:'#F5D3BC',t:'#FCE0C9',u:'#DDAE99',v:'#C9957C',w:'#E7B9AB',x:'#C38D82',g:'#F3E6D8',
   // Familiar two-row eyes: softly outlined top pixel over warm brown iris.
-  I:'#272830',J:'#59443B',K:'#A98971',
+  I:'#302B31',J:'#725044',K:'#AF8066',
   // Relaxed ivory hoodie: cool white core, purposeful folds and raised layers.
   H:'#F7F7F5',h:'#E8ECF0',i:'#D6DEE7',j:'#BBC6D3',k:'#9EABBE',l:'#FFFFFF',
   R:'#9FA9B6',M:'#C0CBD6',N:'#B3C1CF',
@@ -25,56 +25,61 @@ type FaceMap=Partial<Record<Region['face'],string[]>>;
 
 // Natural 8x8 face: balanced dark upper lash + brown iris on each side,
 // uninterrupted peach skin, and a one-pixel neutral mouth.
+// Clean, familiar 8x8 human face. Eye whites are cream rather than glaring
+// white; 2-row iris pixels read as an eye, not vertical black bars.
+// The mouth is a tiny muted pixel above the chin, not a big chin block.
 const head:FaceMap={
   front:[
-    'ABCCCDDA','ACDFEDCA','BDttttDB','usttttsu',
-    'usIssIsu','usJssJsu','ussssssu','usssxssu'
+    'AABBBBAA','BCCDDCCB','BDttttDB','BsttttsB',
+    'sgIssIgs','sgJssJgs','usssxssu','ussssssu'
   ],
   back:[
-    'ABCDEDCB','BCDFFDCB','BCDDFCCB','BCCFDCCB',
-    'BCDFCDCB','BCCFDCCB','BFCDFCCB','ABCCBBAB'
+    'AABBBBAA','BCCCDCCB','BCCDDCCB','BCCDCCCB',
+    'BCDDCCCB','BCDDDDCB','BCCDDCCB','ABBBBBBA'
   ],
+  // left: back hair at the left edge, open warm skin around the tiny ear.
   left:[
-    'ABCCDDCB','BCDFEDCB','BCDFFDCB','BCsstsCB',
-    'BCsuwsCB','BCssusCB','BCsssuCB','ABCCBCAB'
+    'AABBBBAA','BCCCDCCB','BCCDDCCB','BCssstts',
+    'BCsuwsss','BCssusss','BCssssss','ABssssss'
   ],
+  // right: mirrored hair and ear; keep the side face mostly skin-colored.
   right:[
-    'BCDDCCBA','BCDEFDCA','BCDFFDCB','BCstssCB',
-    'BCswusCB','BCsussCB','BCusssCB','BACBCCBA'
+    'AABBBBAA','BCCCDCCB','BCCDDCCB','sttsssCB',
+    'ssswsuCB','sssussCB','ssssssCB','ssssssBA'
   ],
+  // Broad contiguous highlight clusters; no checkerboard or random pixels.
   top:[
-    'AABCCCBA','BCDFEDCB','CDFFEDCC','CCDFDDCC',
-    'BCFDEDCB','BCCDFCCB','ABCCDCBA','AABCCBAA'
+    'AABBBBAA','ABCCDCBA','BCCDDCCB','BCDDEDCB',
+    'BCCDDDCB','ABCCDCBA','AABCCCBA','AAABBBBA'
   ],
   bottom:[
     'vvvvvvvv','vssssssv','vssssssv','vssssssv',
     'vssssssv','vssssssv','vssssssv','vvvvvvvv'
   ]
 };
-// Second-layer hair is *deliberately sparse*: stepped, separated strand
-// clusters on the fringe, crown, temples and nape. Empty pixels expose the
-// natural base silhouette, avoiding a fully filled outer 'cube helmet'.
-// Ear pixels on the base side faces remain unobstructed in the outer mesh.
+// Raised hair pixels are deliberate small connected clumps at the fringe,
+// crown, temples and nape. The translucent gaps are the entire point;
+// filling a side/head face with outer pixels creates the hated helmet look.
 const headOuter:FaceMap={
   front:[
-    '..BC.D..','.BCD.CD.','BC...DC.','B......C',
+    '........','.BC..C..','.CD..DB.','C.......',
     '........','........','........','........'
   ],
   back:[
-    '..BC.D..','.BC..DB.','BC....CB','.B....C.',
-    '..F..C..','...DC...','.B....B.','..B..C..'
+    '........','.BC...C.','.CD...C.','.C....B.',
+    '..D...B.','..C...C.','.BC..C..','...CC...'
   ],
   left:[
-    '..BC.D..','.BC..DB.','BC....CB','.B....C.',
-    '........','..F.....','...C....','..B..C..'
+    '........','..B.....','BC......','BC......',
+    'B.......','B.......','..C.....','........'
   ],
   right:[
-    '..D.CB..','.BD..CB.','BC....CB','.C....B.',
-    '........','.....F..','....C...','..C..B..'
+    '........','.....B..','......CB','......CB',
+    '.......B','.......B','.....C..','........'
   ],
   top:[
-    '..ABBA..','.BC..DB.','BC....CB','.D....C.',
-    '...FE...','BC....CB','.CD..BC.','........'
+    '........','..B.....','.CC..C..','..D.....',
+    '...D.C..','..C.....','.....B..','........'
   ]
 };
 
@@ -82,67 +87,68 @@ const headOuter:FaceMap={
 // kangaroo pocket, shoulder lighting, hem; rear hood matching sides.
 const body:FaceMap={
   front:[
-    'lHHHHHHl','HhHHHHhH','HHiRRiHH','HHiRRiHH',
-    'HhhiihhH','HhHHHHhH','HhMMMMhH','HhiHHihH',
-    'HhiHHihH','HhMMMMhH','iHhhhhHi','jiHHHHij'
+    'lHHHHHHl','HhHHHHhH','HHiHHiHH','HHiHHiHH',
+    'HhHHHHhH','HhHHHHhH','HhHHHHhH','HhHHHHhH',
+    'HhiHHihH','HhiMMihH','HhHHHHhH','iHhhhhHi'
   ],
   back:[
     'lHHHHHHl','HiHhhHiH','iHHHHHHi','iHHHHHHi',
     'HhHHHHhH','HhHHHHhH','HhHHHHhH','HhHHHHhH',
-    'HhHHHHhH','iHhhhhHi','jiHHHHij','jiiHHiij'
+    'HhHHHHhH','HhHHHHhH','iHhhhhHi','jiiHHiij'
   ],
   left:[
     'lHHi','HHhi','hhHi','iHHi','HHHi','HhhH',
-    'HhHi','HHHi','iHHi','HHhi','jiij','jjij'
+    'HHHi','HHHi','iHHi','HHhi','jiij','jjij'
   ],
   right:[
     'iHHl','iHHH','iHhh','iHHH','iHHH','HhhH',
-    'iHhH','iHHH','iHHi','ihHH','jiij','jijj'
+    'iHHH','iHHH','iHHi','ihHH','jiij','jijj'
   ],
   top:['lHHHHHHl','HHHHHHHH','hHHHHHHh','iHHHHHHi'],
   bottom:['jiiHHiij','jiiHHiij','jiiHHiij','jjjjjjjj']
 };
-// Outer layers make the collar and hood perceptibly three-dimensional but
-// keep the front center open so the pocket and drawstrings remain visible.
+// Collar and hood only: avoid the previous giant raised square at the chest.
+// The kangaroo pocket is shaded into the base with fine seams.
 const bodyOuter:FaceMap={
   front:[
-    'ih....hi','ii....ii','..R..R..','..R..R..',
-    '........','........','.M....M.','.M....M.',
-    '.M....M.','.MMMMMM.','........','j......j'
+    '..h..h..','..i..i..','........','........',
+    '........','........','........','........',
+    '........','........','........','........'
   ],
   back:[
-    '.hHHHHi.','.iHHHHi.','.jiHHij.','..jiij..',
+    '..hHHh..','.iHHHHi.','.jiHHij.','..jiij..',
     '........','........','........','........',
     '........','........','........','........'
   ],
   left:[
-    'ih.i','i..i','j..i','....','....','....',
-    '....','....','....','....','....','j..j'
+    '....','i...','....','....','....','....',
+    '....','....','....','....','....','....'
   ],
   right:[
-    'i.hi','i..i','i..j','....','....','....',
-    '....','....','....','....','....','j..j'
+    '....','...i','....','....','....','....',
+    '....','....','....','....','....','....'
   ]
 };
+// Dark tailored jeans with coherent edge shadows, not random square noise.
 const legFront=[
-  'QPPQ','PQPP','PPQP','QPQQ','QPQQ','QPUQ',
-  'QPPQ','PQPP','VVVV','ZzzZ','ZZZZ','noon'
+  'QPPQ','QPPQ','QPPQ','QPPQ','QPPQ','QPPQ',
+  'QPPQ','QPUQ','VPPV','ZzzZ','ZZZZ','noon'
 ];
 const legBack=[
-  'QPPQ','PPQQ','PQPP','PPQP','QPQQ','QQPP',
-  'QPQQ','PPQP','VVVV','ZzzZ','ZZZZ','noon'
+  'QPPQ','QPPQ','QPPQ','QPPQ','QPPQ','QPPQ',
+  'QPPQ','QQPP','VPPV','ZzzZ','ZZZZ','noon'
 ];
 const legLeft=[
-  'QPPQ','PPQP','QPPQ','QPPQ','QPUQ','QPQQ',
-  'QPPQ','QPPQ','VVVV','ZzzZ','ZZZZ','noon'
+  'QPPQ','QPPQ','QPPQ','QPPQ','QPPQ','QPPQ',
+  'QPPQ','QPUQ','VPPV','ZzzZ','ZZZZ','noon'
 ];
 const legRight=[
-  'QPPQ','QPQQ','QPQQ','QPPQ','QQPQ','QPUQ',
-  'QPPQ','QPPQ','VVVV','ZzzZ','ZZZZ','noon'
+  'QPPQ','QPPQ','QPPQ','QPPQ','QPPQ','QPPQ',
+  'QPPQ','QPUQ','VPPV','ZzzZ','ZZZZ','noon'
 ];
 const legOuter=[
-  'Q..Q','....','....','....','....','U...',
-  '....','....','V..V','Z..Z','z..z','oooo'
+  'Q..Q','....','....','....','....','....',
+  '....','....','....','Z..Z','z..z','oooo'
 ];
 
 // Face-aware arm patterns: classic arms are 4px wide, slim front/back are 3px.
@@ -155,26 +161,26 @@ function armPattern(width:number,face:Region['face'],outer:boolean):string[]{
     ['u'.repeat(width),'s'.repeat(width),'v'.repeat(width),'v'.repeat(width)];
   if(outer){
     const rows=face==='front'||face==='back'?[
-      'i..i','....','....','j...','....','...i',
-      '....','....','j..j','NNNN','....','....'
+      '....','....','i...','....','....','....',
+      '....','....','....','j..j','....','....'
     ]:[
-      'i..i','....','....','...j','....','i...',
-      '....','....','j..j','NNNN','....','....'
+      '....','....','...i','....','....','....',
+      '....','....','....','j..j','....','....'
     ];
     return rows.map(row=>width===3?row.slice(0,3):row);
   }
   const rows=face==='front'?[
-    'lHHl','Hhhh','HhHH','iHHH','HhHH','HhhH',
-    'HhHH','iHHH','jHHj','jNNj','stts','ussu'
+    'lHHl','HhHH','HHHH','iHHH','HHHH','HhHH',
+    'HHHH','iHHH','jHHj','jNNj','stts','ussu'
   ]:face==='back'?[
-    'lHHl','Hhhh','HHhH','HHHi','HhHH','HhhH',
-    'HHhH','HHHi','jHHj','jNNj','stts','ussu'
+    'lHHl','HHhH','HHHH','HHHi','HHHH','HHhH',
+    'HHHH','HHHi','jHHj','jNNj','stts','ussu'
   ]:face==='left'?[
-    'lHHi','HhHi','HhHi','iHHi','HhHi','HhhH',
-    'HhHi','iHHi','jHHj','jNNj','stts','ussu'
+    'lHHi','HHHi','HHHi','iHHi','HHHi','HhHH',
+    'HHHi','iHHi','jHHj','jNNj','stts','ussu'
   ]:[
-    'iHHl','iHhH','iHhH','iHHi','iHhH','HhhH',
-    'iHhH','iHHi','jHHj','jNNj','stts','ussu'
+    'iHHl','iHHH','iHHH','iHHi','iHHH','HHhH',
+    'iHHH','iHHi','jHHj','jNNj','stts','ussu'
   ];
   return rows.map(row=>width===3?row.slice(0,3):row);
 }
