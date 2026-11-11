@@ -39,3 +39,11 @@
 .recent-title{margin:14px 0 7px;font-size:11px;font-weight:700;display:flex;justify-content:space-between;gap:8px}.recent-title span{font-size:10px;font-weight:400;color:#9aacb7}
 .recent-colors{grid-template-columns:repeat(12,minmax(0,1fr));gap:4px;margin-top:0}.recent-colors button{min-height:19px;border-radius:3px}.recent-colors p{grid-column:1/-1;color:#95a8b5;font-size:11px;margin:3px 0 0}
 @media(max-width:700px){.atlas-primary{height:410px;max-height:410px}.recent-colors{grid-template-columns:repeat(8,minmax(0,1fr))}}
+
+/* The outer layer switch belongs next to the actual 3D preview, not buried
+   beneath the UV editing controls. Its state never alters atlas or export. */
+.preview-layer-row{padding-top:8px;margin-top:9px!important;border-top:1px solid #354857}
+.preview-layer-row button{min-width:100px}
+.preview-layer-note{display:inline-block;margin-left:4px;color:#99adbc;font-size:10px;line-height:1.5}
+.preview-layer-row button[aria-pressed="true"]{border-color:#e0b17b}
+@media(max-width:700px){.preview-layer-note{width:100%;margin-left:38px}}
