@@ -8,7 +8,7 @@ export const samplePalette:Record<string,string>={
   A:'#29242A',B:'#40302F',C:'#634638',D:'#87624C',E:'#B38A6E',F:'#735342',
   // Natural, uniform complexion. Face uses only forehead highlights, one subtle chin shadow and no cheek noise.
   s:'#F5D1B5',t:'#FFE4CC',u:'#E8BDA2',v:'#C9957C',w:'#EFC4B4',x:'#BB9180',
-  // Small, clean familiar Minecraft-style eyes.
+  // Familiar two-row eyes: softly outlined top pixel over warm brown iris.
   I:'#272830',J:'#59443B',K:'#A98971',
   // Relaxed ivory hoodie: cool white core, purposeful folds and raised layers.
   H:'#F7F7F5',h:'#E8ECF0',i:'#D6DEE7',j:'#BBC6D3',k:'#9EABBE',l:'#FFFFFF',
@@ -23,12 +23,12 @@ const rgba=Object.fromEntries(Object.entries(samplePalette).map(([symbol,hex])=>
 ])) as Record<string,number[]>;
 type FaceMap=Partial<Record<Region['face'],string[]>>;
 
-// A clean 8x8 face: compact symmetrical eyes (one pixel each), clear forehead,
-// uninterrupted skin clusters and a single restrained mouth pixel. No stripe-like eyes.
+// Natural 8x8 face: balanced dark upper lash + brown iris on each side,
+// uninterrupted peach skin, and a one-pixel neutral mouth.
 const head:FaceMap={
   front:[
     'ABCCCDDA','ACDFEDCA','BDttttDB','usttttsu',
-    'usIssIsu','ussssssu','ussssssu','usssxssu'
+    'usIssIsu','usJssJsu','ussssssu','usssxssu'
   ],
   back:[
     'ABCDEDCB','BCDFFDCB','BCDDFCCB','BCCFDCCB',
@@ -36,11 +36,11 @@ const head:FaceMap={
   ],
   left:[
     'ABCCDDCB','BCDFEDCB','BCDFFDCB','BCsstsCB',
-    'BCsustCB','BCsssuCB','BCsssuCB','ABCCBCAB'
+    'BCsuwsCB','BCssusCB','BCsssuCB','ABCCBCAB'
   ],
   right:[
     'BCDDCCBA','BCDEFDCA','BCDFFDCB','BCstssCB',
-    'BCtsusCB','BCusssCB','BCusssCB','BACBCCBA'
+    'BCswusCB','BCsussCB','BCusssCB','BACBCCBA'
   ],
   top:[
     'AABCCCBA','BCDFEDCB','CDFFEDCC','CCDFDDCC',
@@ -51,28 +51,30 @@ const head:FaceMap={
     'vssssssv','vssssssv','vssssssv','vvvvvvvv'
   ]
 };
-// Thin, sculpted second-layer hair. No accessories, goggles, anime horns,
-// giant bows, or high-contrast face-obscuring masks.
+// Second-layer hair is *deliberately sparse*: stepped, separated strand
+// clusters on the fringe, crown, temples and nape. Empty pixels expose the
+// natural base silhouette, avoiding a fully filled outer 'cube helmet'.
+// Ear pixels on the base side faces remain unobstructed in the outer mesh.
 const headOuter:FaceMap={
   front:[
-    'ABCCCDDA','BCDFEDCB','ACD..DCA','B......B',
+    '..BC.D..','.BCD.CD.','BC...DC.','B......C',
     '........','........','........','........'
   ],
   back:[
-    'ABCCCDDA','BCDFEDCB','BC....CB','BF....CB',
-    'BC....CB','C.....CB','........','........'
+    '..BC.D..','.BC..DB.','BC....CB','.B....C.',
+    '..F..C..','...DC...','.B....B.','..B..C..'
   ],
   left:[
-    'ABCCDDCB','BCDFEDCB','BC....CB','BF....CB',
-    'BC....CB','C.....CB','........','........'
+    '..BC.D..','.BC..DB.','BC....CB','.B....C.',
+    '........','..F.....','...C....','..B..C..'
   ],
   right:[
-    'BCDDCCBA','BCDEFDCA','BC....CB','BF....CB',
-    'BC....CB','C.....CB','........','........'
+    '..D.CB..','.BD..CB.','BC....CB','.C....B.',
+    '........','.....F..','....C...','..C..B..'
   ],
   top:[
-    'AABCCCBA','BCDFEDCB','CDFFEDCC','CCDFDDCC',
-    'BCFDEDCB','BCCDFCCB','ABCCDCBA','AABCCBAA'
+    '..ABBA..','.BC..DB.','BC....CB','.D....C.',
+    '...FE...','BC....CB','.CD..BC.','........'
   ]
 };
 
