@@ -38,13 +38,23 @@ describe('Java 64×64 UV engine',()=>{
     }
     expect(()=>assertSkinDimensions(64,64)).not.toThrow();expect(()=>assertSkinDimensions(128,128)).toThrow();
   });
+  it('uses the showcase vivid cyan hair, brilliant white outfit and crimson accent',()=>{
+    for(const model of ['default','slim'] as const){
+      const skin=sampleSkin(model);
+      const head=regions(model).find(v=>v.part==='head'&&v.layer==='base'&&v.face==='front')!.rect;
+      const chest=regions(model).find(v=>v.part==='body'&&v.layer==='base'&&v.face==='front')!.rect;
+      expect(rgbaHex(skin,head.x,head.y)).toBe('#45c7fa');
+      expect(rgbaHex(skin,chest.x,chest.y)).toBe('#f9fcff');
+      expect(rgbaHex(skin,chest.x+3,chest.y+5)).toBe('#ff3f60');
+    }
+  });
   it('keeps the example eyes readable beneath the raised goggles in both arm models',()=>{
     for(const model of ['default','slim'] as const){
       const skin=sampleSkin(model);
       const head=regions(model).find(v=>v.part==='head'&&v.layer==='base'&&v.face==='front')!.rect;
       const goggles=regions(model).find(v=>v.part==='head'&&v.layer==='overlay'&&v.face==='front')!.rect;
-      expect(rgbaHex(skin,head.x+2,head.y+4)).toBe('#263f5b');
-      expect(rgbaHex(skin,head.x+5,head.y+4)).toBe('#263f5b');
+      expect(rgbaHex(skin,head.x+2,head.y+4)).toBe('#214477');
+      expect(rgbaHex(skin,head.x+5,head.y+4)).toBe('#214477');
       expect(skin[pixelIndex(goggles.x+2,goggles.y+4)+3]).toBe(0);
       expect(skin[pixelIndex(goggles.x+1,goggles.y)+3]).toBe(255);
     }
