@@ -42,7 +42,7 @@ const head:FaceMap={
   ],
   right:[
     'HHHHhIhH','HHIIIhIh','HHHhhHhh','Hhaaaahh',
-    'Hhbd aah'.replace(' ',''),'HHdd dah'.replace(' ',''),'HHdddaHh','HKKHhHKK'
+    'HhbdaahH','HHdddaah','HHdddaHh','HKKHhHKK'
   ],
   top:[
     'kKHHHHKk','KjHIIHjK','HIIjjIIH','HIIhhIIH',
