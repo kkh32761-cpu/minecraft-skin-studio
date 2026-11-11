@@ -22,7 +22,7 @@ export default {async fetch(request:Request,env:Env):Promise<Response>{
       const body=await request.text();if(body.length>2.8*1024*1024)return json({error:'이미지 크기는 최대 2MB입니다.'},413);
       const payload=JSON.parse(body) as {mime:string;base64:string;model:string;apiKey?:string};
       const apiKey=env.GEMINI_API_KEY||payload.apiKey;
-      if(!apiKey||!/^AIza[\w-]{25,200}$/.test(apiKey))throw new GenerationError('Gemini 무료 API 키를 연결해 주세요.',400);
+      if(!apiKey||!(/^(?:AIza[\w-]{25,200}|AQ\.[A-Za-z0-9_-]{20,200})$/.test(apiKey)))throw new GenerationError('Google AI Studio에서 발급한 Gemini API 키를 연결해 주세요.',400);
       if(!['default','slim'].includes(payload.model)||typeof payload.base64!=='string'||payload.base64.length>2.8*1024*1024||!/^[-A-Za-z0-9+/]*={0,2}$/.test(payload.base64))throw new GenerationError('이미지 데이터가 올바르지 않습니다.',400);
       const bytes=decode(payload.base64);if(bytes.length>2*1024*1024||!isImage(payload.mime,bytes))throw new GenerationError('PNG, JPG, WebP 이미지(최대 2MB)만 지원합니다.',400);
       entry.count++;quota.set(user,entry);

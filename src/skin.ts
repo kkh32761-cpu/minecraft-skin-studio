@@ -1,3 +1,4 @@
+import {makeSampleSkin} from './sampleSkin';
 export const SIZE = 64;
 export type Model = 'default' | 'slim';
 export type Part = 'head' | 'body' | 'rightArm' | 'leftArm' | 'rightLeg' | 'leftLeg';
@@ -78,32 +79,7 @@ export function blankSkin():Uint8ClampedArray {
   return out;
 }
 export function sampleSkin(model:Model):Uint8ClampedArray {
-  const out=new Uint8ClampedArray(SIZE*SIZE*4);
-  const skin=[226,184,147,255], hair=[48,37,51,255], jacket=[45,81,103,255], pants=[52,58,78,255], shoes=[30,33,42,255];
-  for(const {part,layer,face,rect:r} of regions(model)) {
-    if(layer==='overlay' && part!=='head' && part!=='body') continue;
-    if(layer==='overlay' && part==='body' && face!=='front') continue;
-    const base = layer==='overlay' ? hair : part==='head' ? skin : part.includes('Leg') ? pants : jacket;
-    for(let y=r.y;y<r.y+r.h;y++) for(let x=r.x;x<r.x+r.w;x++) {
-      const dx=x-r.x,dy=y-r.y;
-      let c = base;
-      if(part==='head') {
-        if(layer==='base' && (face==='top'||face==='back'||face==='left'||face==='right'||(face==='front'&&dy<2))) c=hair;
-        if(layer==='overlay' && !(face==='front'&&dy<2 || face==='top' || face==='back' || (face==='left'||face==='right')&&dy<4)) continue;
-        if(layer==='overlay'&&face==='front'&&dy===1&&dx>2&&dx<5) continue;
-        if(layer==='base'&&face==='front'&&dy===4&&(dx===2||dx===5)) c=[94,50,92,255];
-        if(layer==='base'&&face==='front'&&dy===5&&(dx===2||dx===5)) c=[255,241,224,255];
-        if(layer==='base'&&face==='front'&&dy===6&&(dx===1||dx===6)) c=[225,132,139,255];
-      }
-      if(part.includes('Arm')&&layer==='base'&&dy>=8) c=skin;
-      if(part.includes('Leg')&&dy>=9) c=shoes;
-      if(part==='body'&&layer==='base'&&face==='front'&&dx===3&&dy>=3) c=[232,201,146,255];
-      if(layer==='overlay'&&part==='body'&&!(dx===2||dx===4) || layer==='overlay'&&part==='body'&&dy<2) continue;
-      const shade=(dx+dy)%5===0 ? -12 : face==='back' ? -18 : face==='top' ? 12 : 0;
-      out.set([Math.max(0,c[0]+shade),Math.max(0,c[1]+shade),Math.max(0,c[2]+shade),255],pixelIndex(x,y));
-    }
-  }
-  return out;
+  return makeSampleSkin(regions(model));
 }
 export function assertSkinDimensions(width:number,height:number):void {
   if(width!==64||height!==64) throw new Error('64×64 PNG 스킨만 불러올 수 있습니다.');
