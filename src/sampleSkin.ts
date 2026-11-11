@@ -1,216 +1,87 @@
 import type {Region} from './skin';
 
-// Classic casual showcase: an original, familiar Minecraft brown-hair/hoodie
-// avatar, not a copied third-party skin. Pixel clusters are hand-authored for
-// both front and back. All dimensions use Java Edition's real 64x64 UV regions.
-export const samplePalette:Record<string,string>={
-  // Chestnut hair: warm highlights, deliberate strand clusters, dark edges.
-  A:'#302727',B:'#493631',C:'#684B3C',D:'#89644C',E:'#A78064',F:'#69493B',
-  // Natural, uniform complexion. Face uses only forehead highlights, one subtle chin shadow and no cheek noise.
-  s:'#F5D3BC',t:'#FCE0C9',u:'#DDAE99',v:'#C9957C',w:'#E7B9AB',x:'#C38D82',g:'#F3E6D8',
-  // Familiar two-row eyes: softly outlined top pixel over warm brown iris.
-  I:'#302B31',J:'#725044',K:'#AF8066',
-  // Relaxed ivory hoodie: cool white core, purposeful folds and raised layers.
-  H:'#F7F7F5',h:'#E8ECF0',i:'#D6DEE7',j:'#BBC6D3',k:'#9EABBE',l:'#FFFFFF',
-  R:'#9FA9B6',M:'#C0CBD6',N:'#B3C1CF',
-  // Dark slate-blue everyday trousers, coherent seams and hems.
-  P:'#2B3546',Q:'#39465B',U:'#53617B',V:'#202A3A',W:'#65738B',
-  // Bright white trainers, neutral soles and small clean shadow bands.
-  Z:'#FAFCFF',z:'#DFE6EE',n:'#B6C3D0',o:'#68778B'
-};
-const rgba=Object.fromEntries(Object.entries(samplePalette).map(([symbol,hex])=>[
-  symbol,[parseInt(hex.slice(1,3),16),parseInt(hex.slice(3,5),16),parseInt(hex.slice(5,7),16),255]
-])) as Record<string,number[]>;
-type FaceMap=Partial<Record<Region['face'],string[]>>;
+/**
+ * Uploaded 64x32 legacy Steve skin, preserved pixel-for-pixel.
+ * Transparent upper-right region is the optional legacy hat layer.
+ * The newer 64x64 standard requires mirrored left-arm and left-leg UV faces.
+ * The slim variant is a 3px-arm adaptation; the Steve version is exact.
+ */
+const PALETTE_RGB='AAAAAAAADg4PERITFBYZFRYXFRcaFhgbGRocGRwfHB8iHSAkHiElHxALICEjISUpIxcJIyMjJBgIJBgKJhgLJhoKJhoMJxsLKBoNKBsKKBsLKBwLKCgoKRwMKh0NKx4NKx4OLB4OLB4RLR0OLSAQLx8PLyANLyIRMiMQMyQRNCUSOigUPyoVPz8/QiYdQioSUTElUigmYkMvakAwa2trbUMqb0UsdEgvdUcvd0I1ek4zgFM0gVM5g1U7hFIxhlM0h1U7h1g6iFo5ilk7j14+kF5Dll9All9Blm9bmmNEmmRKnGNFnGNGnGdInGlMnHJcnWpPn2hJompHqn1mrCIirHZarYBts3titIRttXtntolst4Jyu4lyvYtyvY5yvY50vohsxpaAz8/P4d7a4+Dd5uPg6efk////';
+const LEGACY_RLE='CAACHgESAh4CEgENCDgwAAEeARICJQEeAxIBOAEzAT8BMwI/AjgwAAEeAiUBFQEeAxIBOAEzBBEBMwE4MAABEgElAR4BEgIeASUBHgE4ATMEEQEzATgwAAEeASUBHgIVAiUBHgE4ATMEEQEzATgwAAIeAhUDJQEeATgBMwQRATEBODAAAR4BFQElAR0BFQENASUBHgE4BjMBODAAAR4BHQQVAh4IOCgAAhkBFQEXAR0BKAIkASYBHwElARsBEgEVAR8BHgIkASgBHQEXARUCGQIeARICHgISAQ0gAAIZAhUBIQEdAR8BKQMfASkBLwEsASEBGwEpAR8BHQEhAhUCGQEeARICJQEeAxIgAAEhARQBFQEdASABGgETAR0BHwFaAV4BYQFdAV8BVQEqAR0BEwEaASABHQEVARQBIQEeAiUBFQEeAxIgAAEZARgBIwEhARkBFwEhAScBUwFYAVMBVgFPAVwCTgEnASEBFwEZASEBIwEYARkBEgElAR4BEgIeASUBHiAAAxkBFgEQAUEBSwErAVgBZwEuAVkBXAEuAWcBUwErAUsBQQEQARYDGQEeASUBHgIVAiUBHiAAAhkBGAEUASIBPgFHAUIBTAFXAVsCPwFgAVIBOwFCAUcBPgEiARQBGAIZAh4CFQMlAR4gAAEhARkBIwEyAVABSQE/ATgBRQFGBDkBRAE8ATgBPwFJAVABMgEjARkBIQEeARUBJQEdARUBDQElAR4gAAI/AUkBPwFNAUcBQwE3ATYBNQI8AToCPQE6ATcBQwFRAU0BSgFNAUkCPwE4BBUBOAE/JAAEDgQcCAABDwY4AQ8IBggAAQsCDwELATMBMAEzATAQAAQOBBwIAAEPBjMBDwgGCAAEDwEzATABMwEwEAAEDgQcCAABDwYzAQ8IBggAAw8BCwEwATMBMAEzEAAEDgQcCAABDwY4AQ8IBggAAQsCDwELATABMwEwATMMAAIDAQIBAwQIAQMBAgIDAwgBBQMJAQQBCgJiAVIBPAJiAQoECQEKAwsCDAILBAkBCgELAQwBCwQJBAwIAAEDAgIBAwQIAQMBAgIDBAgBCQIHAQkBAQELBGIBDAEBAQkDBwELBQwCCwMHAQkBDAELAQwBCgEJAgcBCQQMCAABAwECAgMECAEDAQICAwQIAwcBCQEMAQEBYgIBAWIBAQEMBAcHDAELAQkCBwEJAQsDDAEJAgcBCQQMCAABAwECAgMECAEDAQICAwQIAQQCBwEEAQwBAQRiAQEBDAEEAgcBBAIMAQoBDAELAQoBDAELAQkCBwEJAQoCDAEKAQkCBwEJBAwIAAEDAQICAwQIAgMBAgEDBAUBBwMEAgoBAQJiAQEBVAEKBAQBDAELAQoBDAELAQoCDAQJAQoBCwEMAQsECQQMCAABAwECAgMBCAIFAQgBAwICAQMEBQMEAQcCCgEBAmIBAQELAQoBBwIEAQcBDAIKAQwBCwEKAQsBDAMHAQkBDAELAQwBCgEJAgcBCQQMCAABAwECAgMECAEDAQICAwQIAQcCBAEHAQoCDAIBAQwBCwEKAQcBBAIHAQwBCwEKAQsBDAIKAQwBCQIHAQkBCwMMAQkCBwEJBAwIAAQDBAgBAwECAgMECAEJAgcBCQEKAgwBCgELAQwBCwEKAQkDBwIMAQoBCwEMAgoBDAEJAgcBCQEKAgwBCgEJAgcBCQQMCAAEAwQIBAMECAEJAgcBCQMMAQoBCwIMAQoBCQIHAQkIDAFlAmYBZQFkAmMBZAFlAmYBZQRjCAACLQIDBAgCAwItBDQBCQEHAgkDCgELAQwBCwEMAQoBCQIHAQkDCgEMAgoBDAELAkcBQAFHBFMERwFTAUgBUwFICAAELQQ0BC0ENAEDAQIBAwECBQgBBQEMAQoBCQICAQMBCAIFAQsCCgEFAQgCRwFAAUcCUwFIAVMBQAFHAUABRwFTAUgBUwFICAAELQQ0BC0ENAEDAQICAwYIAQUBCgEDAQICAwMIAQUBCgMIBEcBSAFTAkgBQANHAVMBSAFTAUgIAA==';
 
-// Natural 8x8 face: balanced dark upper lash + brown iris on each side,
-// uninterrupted peach skin, and a one-pixel neutral mouth.
-// Clean, familiar 8x8 human face. Eye whites are cream rather than glaring
-// white; 2-row iris pixels read as an eye, not vertical black bars.
-// The mouth is a tiny muted pixel above the chin, not a big chin block.
-const head:FaceMap={
-  front:[
-    'AABBBBAA','BCCDDCCB','BDttttDB','BsttttsB',
-    'sgIssIgs','sgJssJgs','usssxssu','ussssssu'
-  ],
-  back:[
-    'AABBBBAA','BCCCDCCB','BCCDDCCB','BCCDCCCB',
-    'BCDDCCCB','BCDDDDCB','BCCDDCCB','ABBBBBBA'
-  ],
-  // left: back hair at the left edge, open warm skin around the tiny ear.
-  left:[
-    'AABBBBAA','BCCCDCCB','BCCDDCCB','BCssstts',
-    'BCsuwsss','BCssusss','BCssssss','ABssssss'
-  ],
-  // right: mirrored hair and ear; keep the side face mostly skin-colored.
-  right:[
-    'AABBBBAA','BCCCDCCB','BCCDDCCB','sttsssCB',
-    'ssswsuCB','sssussCB','ssssssCB','ssssssBA'
-  ],
-  // Broad contiguous highlight clusters; no checkerboard or random pixels.
-  top:[
-    'AABBBBAA','ABCCDCBA','BCCDDCCB','BCDDEDCB',
-    'BCCDDDCB','ABCCDCBA','AABCCCBA','AAABBBBA'
-  ],
-  bottom:[
-    'vvvvvvvv','vssssssv','vssssssv','vssssssv',
-    'vssssssv','vssssssv','vssssssv','vvvvvvvv'
-  ]
-};
-// Raised hair pixels are deliberate small connected clumps at the fringe,
-// crown, temples and nape. The translucent gaps are the entire point;
-// filling a side/head face with outer pixels creates the hated helmet look.
-const headOuter:FaceMap={
-  front:[
-    '........','.BC..C..','.CD..DB.','C.......',
-    '........','........','........','........'
-  ],
-  back:[
-    '........','.BC...C.','.CD...C.','.C....B.',
-    '..D...B.','..C...C.','.BC..C..','...CC...'
-  ],
-  left:[
-    '........','..B.....','BC......','BC......',
-    'B.......','B.......','..C.....','........'
-  ],
-  right:[
-    '........','.....B..','......CB','......CB',
-    '.......B','.......B','.....C..','........'
-  ],
-  top:[
-    '........','..B.....','.CC..C..','..D.....',
-    '...D.C..','..C.....','.....B..','........'
-  ]
-};
+function decodeBase64(input:string):Uint8Array {
+  const binary=atob(input);
+  return Uint8Array.from(binary,char=>char.charCodeAt(0));
+}
 
-// Plain but tailored: clean ivory hoodie, two neat drawstrings, subtle
-// kangaroo pocket, shoulder lighting, hem; rear hood matching sides.
-const body:FaceMap={
-  front:[
-    'lHHHHHHl','HhHHHHhH','HHiHHiHH','HHiHHiHH',
-    'HhHHHHhH','HhHHHHhH','HhHHHHhH','HhHHHHhH',
-    'HhiHHihH','HhiMMihH','HhHHHHhH','iHhhhhHi'
-  ],
-  back:[
-    'lHHHHHHl','HiHhhHiH','iHHHHHHi','iHHHHHHi',
-    'HhHHHHhH','HhHHHHhH','HhHHHHhH','HhHHHHhH',
-    'HhHHHHhH','HhHHHHhH','iHhhhhHi','jiiHHiij'
-  ],
-  left:[
-    'lHHi','HHhi','hhHi','iHHi','HHHi','HhhH',
-    'HHHi','HHHi','iHHi','HHhi','jiij','jjij'
-  ],
-  right:[
-    'iHHl','iHHH','iHhh','iHHH','iHHH','HhhH',
-    'iHHH','iHHH','iHHi','ihHH','jiij','jijj'
-  ],
-  top:['lHHHHHHl','HHHHHHHH','hHHHHHHh','iHHHHHHi'],
-  bottom:['jiiHHiij','jiiHHiij','jiiHHiij','jjjjjjjj']
-};
-// Collar and hood only: avoid the previous giant raised square at the chest.
-// The kangaroo pocket is shaded into the base with fine seams.
-const bodyOuter:FaceMap={
-  front:[
-    '..h..h..','..i..i..','........','........',
-    '........','........','........','........',
-    '........','........','........','........'
-  ],
-  back:[
-    '..hHHh..','.iHHHHi.','.jiHHij.','..jiij..',
-    '........','........','........','........',
-    '........','........','........','........'
-  ],
-  left:[
-    '....','i...','....','....','....','....',
-    '....','....','....','....','....','....'
-  ],
-  right:[
-    '....','...i','....','....','....','....',
-    '....','....','....','....','....','....'
-  ]
-};
-// Dark tailored jeans with coherent edge shadows, not random square noise.
-const legFront=[
-  'QPPQ','QPPQ','QPPQ','QPPQ','QPPQ','QPPQ',
-  'QPPQ','QPUQ','VPPV','ZzzZ','ZZZZ','noon'
-];
-const legBack=[
-  'QPPQ','QPPQ','QPPQ','QPPQ','QPPQ','QPPQ',
-  'QPPQ','QQPP','VPPV','ZzzZ','ZZZZ','noon'
-];
-const legLeft=[
-  'QPPQ','QPPQ','QPPQ','QPPQ','QPPQ','QPPQ',
-  'QPPQ','QPUQ','VPPV','ZzzZ','ZZZZ','noon'
-];
-const legRight=[
-  'QPPQ','QPPQ','QPPQ','QPPQ','QPPQ','QPPQ',
-  'QPPQ','QPUQ','VPPV','ZzzZ','ZZZZ','noon'
-];
-const legOuter=[
-  'Q..Q','....','....','....','....','....',
-  '....','....','....','Z..Z','z..z','oooo'
-];
-
-// Face-aware arm patterns: classic arms are 4px wide, slim front/back are 3px.
-// The top and bottom surfaces are physical UV rectangles, not painted overlays.
-function armPattern(width:number,face:Region['face'],outer:boolean):string[]{
-  if(face==='top')return outer
-    ?Array.from({length:4},()=>'.'.repeat(width))
-    :['l'.repeat(width),'H'.repeat(width),'h'.repeat(width),'H'.repeat(width)];
-  if(face==='bottom')return outer?Array.from({length:4},()=>'.'.repeat(width)):
-    ['u'.repeat(width),'s'.repeat(width),'v'.repeat(width),'v'.repeat(width)];
-  if(outer){
-    const rows=face==='front'||face==='back'?[
-      '....','....','i...','....','....','....',
-      '....','....','....','j..j','....','....'
-    ]:[
-      '....','....','...i','....','....','....',
-      '....','....','....','j..j','....','....'
-    ];
-    return rows.map(row=>width===3?row.slice(0,3):row);
+type Face=Region['face'];
+type UVRect={x:number;y:number;w:number;h:number};
+function limbFace(u:number,v:number,face:Face,width=4):UVRect {
+  const d=4,h=12;
+  switch(face){
+    case 'top': return {x:u+d,y:v,w:width,h:d};
+    case 'bottom': return {x:u+d+width,y:v,w:width,h:d};
+    case 'left': return {x:u,y:v+d,w:d,h};
+    case 'front': return {x:u+d,y:v+d,w:width,h};
+    case 'right': return {x:u+d+width,y:v+d,w:d,h};
+    case 'back': return {x:u+d*2+width,y:v+d,w:width,h};
   }
-  const rows=face==='front'?[
-    'lHHl','HhHH','HHHH','iHHH','HHHH','HhHH',
-    'HHHH','iHHH','jHHj','jNNj','stts','ussu'
-  ]:face==='back'?[
-    'lHHl','HHhH','HHHH','HHHi','HHHH','HHhH',
-    'HHHH','HHHi','jHHj','jNNj','stts','ussu'
-  ]:face==='left'?[
-    'lHHi','HHHi','HHHi','iHHi','HHHi','HhHH',
-    'HHHi','iHHi','jHHj','jNNj','stts','ussu'
-  ]:[
-    'iHHl','iHHH','iHHH','iHHi','iHHH','HHhH',
-    'iHHH','iHHi','jHHj','jNNj','stts','ussu'
-  ];
-  return rows.map(row=>width===3?row.slice(0,3):row);
 }
-function solid(width:number,height:number,symbol:string):string[]{
-  return Array.from({length:height},()=>symbol.repeat(width));
+const FACES:Face[]=['top','bottom','left','front','right','back'];
+const pixelAt=(x:number,y:number)=>(y*64+x)*4;
+function decodeSteve():Uint8ClampedArray {
+  const palette=decodeBase64(PALETTE_RGB);
+  const runs=decodeBase64(LEGACY_RLE);
+  const result=new Uint8ClampedArray(64*64*4);
+  let n=0;
+  for(let i=0;i<runs.length;i+=2){
+    const count=runs[i],index=runs[i+1];
+    for(let j=0;j<count;j++){
+      if(n>=64*32)throw Error('Legacy skin data overflow');
+      if(index!==0){
+        const p=index*3;
+        result.set([palette[p],palette[p+1],palette[p+2],255],n*4);
+      }
+      n++;
+    }
+  }
+  if(n!==64*32)throw Error('Legacy skin data length mismatch');
+  const legacy=new Uint8ClampedArray(result);
+  // Exact vanilla 64x32 -> 64x64 limb mirroring; swap left/right faces.
+  function mirroredLimb(fromU:number,fromV:number,toU:number,toV:number){
+    for(const face of FACES){
+      const sourceFace:Face=face==='left'?'right':face==='right'?'left':face;
+      const from=limbFace(fromU,fromV,sourceFace);
+      const to=limbFace(toU,toV,face);
+      for(let y=0;y<to.h;y++)for(let x=0;x<to.w;x++){
+        const src=pixelAt(from.x+from.w-1-x,from.y+y);
+        result.set(legacy.subarray(src,src+4),pixelAt(to.x+x,to.y+y));
+      }
+    }
+  }
+  mirroredLimb(0,16,16,48);
+  mirroredLimb(40,16,32,48);
+  return result;
 }
-export function makeSampleSkin(atlas:Region[]):Uint8ClampedArray{
-  const out=new Uint8ClampedArray(64*64*4);
-  for(const region of atlas){
-    const {part,layer,face,rect}=region;
-    const arm=part==='rightArm'||part==='leftArm';
-    const leg=part==='rightLeg'||part==='leftLeg';
-    let pattern:string[]|undefined;
-    if(part==='head')pattern=(layer==='base'?head:headOuter)[face];
-    else if(part==='body')pattern=(layer==='base'?body:bodyOuter)[face];
-    else if(leg)pattern=layer==='overlay'
-      ?(face==='front'||face==='back'?legOuter:undefined)
-      :face==='front'?legFront:face==='back'?legBack:
-        face==='left'?legLeft:face==='right'?legRight:
-        solid(rect.w,rect.h,face==='top'?'P':'o');
-    else if(arm)pattern=armPattern(rect.w,face,layer==='overlay');
-    if(!pattern)continue;
-    if(pattern.length!==rect.h||pattern.some(row=>row.length!==rect.w))
-      throw Error('Sample UV art dimensions: '+part+'/'+layer+'/'+face+' expected '+rect.w+'x'+rect.h);
-    pattern.forEach((row,y)=>[...row].forEach((symbol,x)=>{
-      if(symbol==='.')return;
-      const color=rgba[symbol];
-      if(!color)throw Error('Sample palette is missing symbol '+symbol);
-      out.set(color,((rect.y+y)*64+rect.x+x)*4);
-    }));
+const STEVE=decodeSteve();
+
+export function makeSampleSkin(atlas:Region[]):Uint8ClampedArray {
+  const isSlim=atlas.some(r=>r.part==='rightArm'&&r.layer==='base'&&r.face==='front'&&r.rect.w===3);
+  if(!isSlim)return new Uint8ClampedArray(STEVE);
+  const out=new Uint8ClampedArray(STEVE);
+  const arms=[
+    [40,16],[40,32],[32,48],[48,48]
+  ] as const;
+  // Clear classic arm nets, then repack into valid 3px-arm UV positions.
+  for(const [u,v] of arms)for(let y=v;y<v+16;y++)for(let x=u;x<u+16;x++)
+    out.set([0,0,0,0],pixelAt(x,y));
+  for(const [u,v] of arms)for(const face of FACES){
+    const from=limbFace(u,v,face,4);
+    const to=limbFace(u,v,face,3);
+    for(let y=0;y<to.h;y++)for(let x=0;x<to.w;x++){
+      const index=pixelAt(from.x+x,from.y+y);
+      out.set(STEVE.subarray(index,index+4),pixelAt(to.x+x,to.y+y));
+    }
   }
   return out;
 }
