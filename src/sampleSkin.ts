@@ -147,9 +147,9 @@ const legOuter=[
 // The top and bottom surfaces are physical UV rectangles, not painted overlays.
 function armPattern(width:number,face:Region['face'],outer:boolean):string[]{
   if(face==='top')return outer
-    ?['....','....','....','....']
+    ?Array.from({length:4},()=>'.'.repeat(width))
     :['l'.repeat(width),'H'.repeat(width),'h'.repeat(width),'H'.repeat(width)];
-  if(face==='bottom')return outer?['....','....','....','....']:
+  if(face==='bottom')return outer?Array.from({length:4},()=>'.'.repeat(width)):
     ['u'.repeat(width),'s'.repeat(width),'v'.repeat(width),'v'.repeat(width)];
   if(outer){
     const rows=face==='front'||face==='back'?[
