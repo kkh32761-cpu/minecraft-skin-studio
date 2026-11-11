@@ -1,6 +1,7 @@
 import {generateCharacter,validateCharacterSpec} from '../src/character';
 import {ASSETS} from './assets.generated';
 type Env={OPENAI_API_KEY?:string;OPENAI_VISION_MODEL?:string};
+class GenerationError extends Error{constructor(message:string,readonly status:number){super(message);}}
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
 const quota=new Map<string,{until:number,count:number}>();
 const colors=['skin','hair','hairShade','eyes','top','topShade','bottom','shoes','accent'];
@@ -20,7 +21,13 @@ async function analyze(mime:string,base64:string,key:string,model:string){
   const res=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},signal:AbortSignal.timeout(45000),body:JSON.stringify({model,store:false,max_output_tokens:1200,
     input:[{role:'user',content:[{type:'input_text',text:'Analyze the visible character for a Minecraft skin. Preserve visually confirmed hair, eye and outfit colors. Return concise Korean descriptions. Put inferred back/side appearance separately. Color keys must match the visible design; choose harmonious shades. Classify a Minecraft screenshot separately. Do not invent visible traits.'},{type:'input_image',image_url:`data:${mime};base64,${base64}`,detail:'high'}]}],
     text:{format:{type:'json_schema',name:'skin_character_spec',strict:true,schema}}})});
-  if(!res.ok)throw Error(`AI 제공자 오류 (${res.status})`);
+  if(!res.ok){
+    const body=await res.json().catch(()=>null) as {error?:{code?:string}}|null;
+    if(res.status===429&&body?.error?.code==='insufficient_quota')throw new GenerationError('OpenAI API 크레딧이 없습니다. 결제 설정 후 다시 시도하세요.',503);
+    if(res.status===401||res.status===403)throw new GenerationError('OpenAI API 키 권한을 확인해야 합니다.',503);
+    if(res.status===429)throw new GenerationError('AI 요청이 일시적으로 제한되었습니다. 잠시 후 다시 시도하세요.',429);
+    throw new GenerationError(`AI 제공자 오류 (${res.status}). 잠시 후 다시 시도하세요.`,502);
+  }
   const result=await res.json() as {output?:{content?:{type:string;text?:string}[]}[]};
   const raw=result.output?.flatMap(v=>v.content||[]).find(v=>v.type==='output_text')?.text;
   if(!raw)throw Error('AI가 캐릭터 분석 내용을 반환하지 않았습니다.');
@@ -40,12 +47,12 @@ export default {async fetch(request:Request,env:Env):Promise<Response>{
     try{
       const body=await request.text();if(body.length>2.8*1024*1024)return json({error:'이미지 크기는 최대 2MB입니다.'},413);
       const payload=JSON.parse(body) as {mime:string;base64:string;model:string};
-      if(!['default','slim'].includes(payload.model)||typeof payload.base64!=='string'||payload.base64.length>2.8*1024*1024||!/^[-A-Za-z0-9+/]*={0,2}$/.test(payload.base64))throw Error('이미지 데이터가 올바르지 않습니다.');
-      const bytes=decode(payload.base64);if(bytes.length>2*1024*1024||!isImage(payload.mime,bytes))throw Error('PNG, JPG, WebP 이미지(최대 2MB)만 지원합니다.');
+      if(!['default','slim'].includes(payload.model)||typeof payload.base64!=='string'||payload.base64.length>2.8*1024*1024||!/^[-A-Za-z0-9+/]*={0,2}$/.test(payload.base64))throw new GenerationError('이미지 데이터가 올바르지 않습니다.',400);
+      const bytes=decode(payload.base64);if(bytes.length>2*1024*1024||!isImage(payload.mime,bytes))throw new GenerationError('PNG, JPG, WebP 이미지(최대 2MB)만 지원합니다.',400);
       entry.count++;quota.set(user,entry);
       const spec=await analyze(payload.mime,payload.base64,env.OPENAI_API_KEY,env.OPENAI_VISION_MODEL||'gpt-4.1-mini');
       return json({spec,pixels:Array.from(generateCharacter(spec,payload.model as 'default'|'slim'))});
-    }catch(error){return json({error:error instanceof Error?error.message:'AI 생성에 실패했습니다.'},400);}
+    }catch(error){return json({error:error instanceof Error?error.message:'AI 생성에 실패했습니다.'},error instanceof GenerationError?error.status:error instanceof SyntaxError?400:502);}
   }
   if(request.method!=='GET'&&request.method!=='HEAD')return new Response('Method not allowed',{status:405});
   const key=path==='/'?'/index.html':path;const asset=ASSETS[key as keyof typeof ASSETS];
