@@ -6,7 +6,7 @@
 2. **UV mapping**: `src/skin.ts` encodes separate Classic/Slim rectangles for head, body, paired limbs and their outer layers. These coordinates were cross-checked against `skinview3d`'s `setSkinUVs` and automated overlap/boundary tests. Steve/Alex is editor state, not a PNG metadata field.
 3. **Rendering**: `skinview3d` is the canonical Three.js WebGL renderer. A separate Canvas cuboid renderer uses atlas pixels for WebGL-disabled environments. It does not introduce extra 3D accessories absent from the texture.
 4. **Persistence**: browser-local RGBA base64 snapshot and model choice; bounded 40-entry in-memory edit history. Reference images stay in the browser until the user explicitly requests AI generation; then the compressed image is sent to the Worker and model provider, and neither server nor UI autosave retains it.
-5. **AI boundary**: a private Worker endpoint calls the provider only when `OPENAI_API_KEY` is configured. It validates the structured visible/inferred `CharacterSpec`, maps palette roles to deterministic per-part UV pixels in `src/character.ts`, then returns RGBA data to the regular editor/preview/export path. This is a limited template engine, not a quality-verified likeness system. A future lock mask must be applied after proposed pixels and before final structural validation.
+5. **AI boundary**: a private Worker endpoint calls Gemini 2.5 Flash only when `GEMINI_API_KEY` is configured. It does not read the earlier OpenAI key or switch to a paid provider after free-tier quota exhaustion. It validates the structured visible/inferred `CharacterSpec`, maps palette roles to deterministic per-part UV pixels in `src/character.ts`, then returns RGBA data to the regular editor/preview/export path. This is a limited template engine, not a quality-verified likeness system. A future lock mask must be applied after proposed pixels and before final structural validation.
 6. **Workspace usability**: a draggable center/right splitter changes CSS grid columns; a focused single-face canvas shares the atlas RGBA array with the expandable full UV view. Color is an explicit RGB/HSV + alpha state; base-layer painting is opaque.
 
 ## Proposed next AI service interface (not implemented)
@@ -17,7 +17,7 @@
 
 `POST /v1/jobs/:id/regions`: selected region and immutable mask hashes. Server returns candidate RGBA rectangles and provenance, not a flattened preview. Client merges only allowed UV cells. Unseen sides are flagged inferred.
 
-The older loopback adapter uses `OPENAI_API_KEY` and `STUDIO_SERVER_TOKEN`. The Worker secret is configured separately. It is currently absent; the AI button is disabled rather than pretending to generate. The Site must remain private until durable rate/cost limits, real-key image tests and a privacy policy are in place.
+The older loopback adapter uses `OPENAI_API_KEY` and `STUDIO_SERVER_TOKEN`; it is not deployed and is outside the free path. The Worker needs a separate Gemini free-tier secret, which is not yet configured. The Site remains private until durable rate limits, real-key image tests and a privacy policy are in place. Free-tier inputs and outputs may be used to improve Google's products, so the UI discloses this before generation.
 
 ## Cross-review
 
@@ -34,7 +34,7 @@ The older loopback adapter uses `OPENAI_API_KEY` and `STUDIO_SERVER_TOKEN`. The 
 
 ## Next work
 
-1. Secure AI provider key connection, real-image evaluation and durable quotas/cost controls. The current template assembler is not a validated high-fidelity AI result.
+1. Connect an unbilled Gemini free-tier project key, run real-image evaluation and add durable quotas. The current template assembler is not a validated high-fidelity AI result.
 2. Semantic pixel masks and face-aware limb symmetry; then region locks and conflict previews.
 3. Face design engine: 8×8 base face plus overlay hair; 3–5 independent eye/bang candidates; blinded human ranking for resemblance and pixel-art appeal separately.
 4. Integration tests in a WebGL-enabled desktop/mobile browser and actual Java launcher import. Six image categories, including the black-hair/red-eye reference when supplied, evaluated with same-input competitor baselines.
