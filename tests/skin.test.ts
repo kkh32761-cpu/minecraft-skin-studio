@@ -46,8 +46,13 @@ describe('Java 64×64 UV engine',()=>{
       const hair=get('head','overlay','front');
       const back=get('head','base','back');
       expect(rgbaHex(skin,face.x,face.y)).toBe('#29242a'); // soft dark hair edge
-      expect(rgbaHex(skin,face.x+3,face.y+3)).toBe('#f5d1b5'); // clean skin
+      expect(rgbaHex(skin,face.x+3,face.y+3)).toBe('#ffe4cc'); // uniform forehead highlight
       expect(rgbaHex(skin,face.x+2,face.y+4)).toBe('#272830'); // dark left eye
+      expect(rgbaHex(skin,face.x+2,face.y+5)).toBe('#f5d1b5'); // no elongated eye/vertical streak
+      expect(rgbaHex(skin,face.x+5,face.y+5)).toBe('#f5d1b5'); // no elongated eye/vertical streak
+      expect(rgbaHex(skin,face.x+1,face.y+6)).toBe('#f5d1b5'); // cheeks stay neutral and clean
+      expect(rgbaHex(skin,face.x+6,face.y+6)).toBe('#f5d1b5'); // symmetric cheeks
+      expect(rgbaHex(skin,face.x+4,face.y+7)).toBe('#bb9180'); // one subtle mouth pixel
       expect(rgbaHex(skin,face.x+5,face.y+4)).toBe('#272830'); // dark right eye
       expect(rgbaHex(skin,face.x+2,face.y+5)).toBe('#59443b'); // warm iris
       expect(rgbaHex(skin,back.x+3,back.y+3)).toBe('#735342'); // coherent back strands
