@@ -26,6 +26,8 @@ export default function App(){
   const [colorAlpha,setColorAlpha]=useState(255);
   const [recentColors,setRecentColors]=useState<string[]>(readRecentColors);
   const [aiReady,setAIReady]=useState(false);
+  const [aiAuthenticated,setAIAuthenticated]=useState(false);
+  const [aiKey,setAIKey]=useState('');
   const [aiChecked,setAIChecked]=useState(false);
   const [aiBusy,setAIBusy]=useState(false);
   const [aiDescription,setAIDescription]=useState('');
@@ -50,7 +52,7 @@ export default function App(){
   const current=useRef(data),history=useRef<Uint8ClampedArray[]>([]),future=useRef<Uint8ClampedArray[]>([]),drawing=useRef(false);
   const modelRef=useRef(model),partRef=useRef(part),layerRef=useRef(layer),toolRef=useRef(tool),colorRef=useRef(color),alphaRef=useRef(colorAlpha);
   current.current=data;modelRef.current=model;partRef.current=part;layerRef.current=layer;toolRef.current=tool;colorRef.current=color;alphaRef.current=colorAlpha;
-  useEffect(()=>{fetch('/api/ai/status').then(r=>r.ok?r.json():null).then(v=>setAIReady(Boolean(v?.ready&&v?.authenticated))).catch(()=>setAIReady(false)).finally(()=>setAIChecked(true));},[]);
+  useEffect(()=>{fetch('/api/ai/status').then(r=>r.ok?r.json():null).then(v=>{setAIReady(Boolean(v?.ready&&v?.authenticated));setAIAuthenticated(Boolean(v?.authenticated));}).catch(()=>{setAIReady(false);setAIAuthenticated(false)}).finally(()=>setAIChecked(true));},[]);
   function commit(next:Uint8ClampedArray,saveHistory=true){
     if(next===current.current)return;
     if(saveHistory){history.current.push(new Uint8ClampedArray(current.current));if(history.current.length>40)history.current.shift();future.current=[];}
@@ -147,9 +149,9 @@ export default function App(){
     }catch(e){setStatus(e instanceof Error?e.message:'이미지를 읽지 못했습니다.');}
     if(refInput.current)refInput.current.value='';
   }
-  async function generateAI(){if(!reference||!aiReady||aiBusy)return;setAIBusy(true);setStatus('이미지 특징을 분석해 실제 UV 픽셀로 조립 중입니다…');
+  async function generateAI(){if(!reference||!(aiReady||aiKey)||!aiAuthenticated||aiBusy)return;setAIBusy(true);setStatus('이미지 특징을 분석해 실제 UV 픽셀로 조립 중입니다…');
     try{const [metadata,base64]=reference.split(',');if(!base64||base64.length>2.8*1024*1024)throw Error('참고 이미지가 너무 큽니다. 더 작은 이미지를 사용하세요.');
-      const response=await fetch('/api/ai/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mime:metadata.match(/^data:(.*?);/)?.[1],base64,model})});
+      const response=await fetch('/api/ai/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mime:metadata.match(/^data:(.*?);/)?.[1],base64,model,...(aiReady?{}:{apiKey:aiKey.trim()})})});
       const result=await response.json();if(!response.ok)throw Error(result.error||`AI 오류 (${response.status})`);
       if(!Array.isArray(result.pixels)||result.pixels.length!==64*64*4||result.pixels.some((v:unknown)=>!Number.isInteger(v)||Number(v)<0||Number(v)>255))throw Error('생성된 스킨 픽셀 데이터가 올바르지 않습니다.');
       commit(new Uint8ClampedArray(result.pixels));setAIDescription(`확인된 특징: ${result.spec.visible.hair} · ${result.spec.visible.eyes} · ${result.spec.visible.clothes}\n추론한 부분: ${result.spec.inferred.back}`);
@@ -158,15 +160,17 @@ export default function App(){
   }
   function download(){const c=canvasFromData(data);c.toBlob(blob=>{if(!blob){setStatus('PNG 생성에 실패했습니다.');return;}const a=document.createElement('a');const url=URL.createObjectURL(blob);a.href=url;a.download=`minecraft-skin-${model==='slim'?'alex':'steve'}.png`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setStatus('64×64 PNG를 다운로드했습니다. 게임 업로드 시 같은 팔 모델을 선택하세요.');},'image/png');}
   const selected=hover?`${parts.find(p=>p.id===hover.part)?.label} · ${labels[hover.face]} · ${hover.rect.x},${hover.rect.y}`:'도면에서 원하는 면을 클릭하면 자동으로 선택됩니다';
+  const aiConfigured=aiReady||/^AIza[\w-]{25,200}$/.test(aiKey.trim());
   const isGuide=data.every((v,i)=>v===GUIDE[i]);
   return <div className="app">
-    <header className="topbar"><div className="brand"><div className="brand-mark">▦</div><div><strong>SKIN STUDIO</strong><small>MINECRAFT · 64×64</small></div></div><span className="version">ENGINE v0.2 · 편집 가능 / {aiChecked?(aiReady?'Gemini 무료 AI 연결됨':'무료 AI 연결 대기'):'AI 확인 중'}</span><button className="primary download-top" onClick={download}>↓ PNG 다운로드</button></header>
+    <header className="topbar"><div className="brand"><div className="brand-mark">▦</div><div><strong>SKIN STUDIO</strong><small>MINECRAFT · 64×64</small></div></div><span className="version">ENGINE v0.2 · 편집 가능 / {aiChecked?(aiReady?'Gemini 무료 AI 연결됨':aiConfigured?'무료 키 입력됨 · 생성 시 검증':'무료 AI 연결 대기'):'AI 확인 중'}</span><button className="primary download-top" onClick={download}>↓ PNG 다운로드</button></header>
     <main ref={workspaceRef} className="workspace" style={{'--preview-width':`${previewWidth}px`} as React.CSSProperties}>
       <aside className="side left"><div className="section-title"><span className="num">01</span><div><h2>시작하기</h2><p>스킨 텍스처 또는 참고 이미지</p></div></div>
         <div className="panel"><div className="panel-label">스킨 파일</div><p className="hint">처음에는 기본형 가이드 스킨으로 시작합니다.</p><input ref={fileInput} type="file" accept="image/png" hidden onChange={e=>importSkin(e.target.files?.[0])}/><button className="wide-button" onClick={()=>fileInput.current?.click()}>↑ 기존 스킨 불러오기</button><div className="split"><button onClick={()=>{commit(blankSkin());setStatus('기본형 가이드 스킨을 불러왔습니다.');}}>기본형</button><button onClick={()=>{commit(sampleSkin(model));setStatus('편집용 예시 스킨을 불러왔습니다. AI 생성 결과가 아닙니다.');}}>예시 스킨</button></div></div>
         <div className="panel"><div className="panel-label">원본 이미지 <span className="badge">AI / 수동 비교</span></div><input ref={refInput} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={e=>importReference(e.target.files?.[0])}/>{reference?<div className="reference"><img src={reference} alt="업로드한 참고 이미지"/><button onClick={()=>refInput.current?.click()}>이미지 교체</button><button onClick={()=>{setReference(null);setAIDescription('')}}>제거</button></div>:<button className="reference-empty" onClick={()=>refInput.current?.click()}>+ 사진 · 일러스트 추가</button>}
-          <button className="wide-button ai-generate" disabled={!reference||!aiReady||aiBusy} onClick={generateAI}>{aiBusy?'분석 · UV 제작 중…':'✦ 이미지로 AI 스킨 생성'}</button>
-          <p className="hint">{aiReady?(reference?'사진을 Gemini 무료 API로 전송해 분석합니다. 무료 제공량 제한이 있으며 Google 제품 개선에 사용될 수 있습니다.':'먼저 참고 이미지를 추가하세요. Gemini 무료 제공량 제한이 적용됩니다.'):(aiChecked?'Gemini 무료 API 키가 아직 연결되지 않았습니다. 직접 편집은 이용할 수 있습니다.':'무료 AI 서버 연결을 확인 중입니다…')}</p>{aiDescription&&<p className="ai-description">{aiDescription}</p>}
+          {!aiReady&&aiChecked&&<div className="ai-key-setup"><label htmlFor="gemini-key">내 Gemini 무료 API 키</label><input id="gemini-key" type="password" value={aiKey} onChange={e=>setAIKey(e.target.value)} autoComplete="off" spellCheck={false} placeholder="Google AI Studio에서 만든 키 붙여넣기"/><a href="https://aistudio.google.com/api-keys" target="_blank" rel="noopener noreferrer">Google AI Studio에서 무료 키 만들기 ↗</a><p className="hint">키는 현재 열린 화면의 메모리에만 두며 저장하지 않습니다. 새로고침하면 다시 입력해야 합니다.</p></div>}
+          <button className="wide-button ai-generate" disabled={!reference||!aiConfigured||!aiAuthenticated||aiBusy} onClick={generateAI}>{aiBusy?'분석 · UV 제작 중…':'✦ 이미지로 AI 스킨 생성'}</button>
+          <p className="hint">{!aiChecked?'무료 AI 서버 연결을 확인 중입니다…':!aiAuthenticated?'사이트 로그인이 필요합니다.':aiConfigured?(reference?'사진을 Gemini 무료 API로 전송해 분석합니다. 무료 제공량 제한이 있으며 Google 제품 개선에 사용될 수 있습니다.':'먼저 참고 이미지를 추가하세요.'):'무료 키를 입력하면 실제 이미지 분석을 시작할 수 있습니다. 직접 편집은 계속 이용할 수 있습니다.'}</p>{aiDescription&&<p className="ai-description">{aiDescription}</p>}
         </div>
         <div className="panel info"><div className="panel-label">현재 작업</div><div className="info-row"><span>텍스처</span><strong>64 × 64 · RGBA</strong></div><div className="info-row"><span>팔 모델</span><strong>{model==='slim'?'Alex · 3px':'Steve · 4px'}</strong></div><div className="info-row"><span>저장</span><strong>이 브라우저에 자동 저장</strong></div><p className="hint">자동 저장은 현재 브라우저에만 남습니다. 보관하려면 PNG를 다운로드하세요.</p></div>
       </aside>
